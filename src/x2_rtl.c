@@ -209,19 +209,34 @@ enum {
  * only exists during a fight. */
 static int x2_ws_hud_present(void) {
   if (!g_ppu) return 0;
-  unsigned matched = 0;
-  for (unsigned slot = 0; slot <= 5; slot++) {
+
+  /* Slot 0 is the bar's "X" icon: tile 0x86, palette 0x34, hard against the
+   * left edge. Distinctive enough that a cutscene actor will not impersonate it. */
+  const unsigned icon_x = g_ppu->oam[0] & 0xFFu;
+  const unsigned icon_y = g_ppu->oam[0] >> 8;
+  const unsigned icon_tile = g_ppu->oam[1] & 0xFFu;
+  const unsigned icon_attr = g_ppu->oam[1] >> 8;
+  const unsigned icon_xhi = g_ppu->highOam[0] & 1u;
+  if (icon_x != 8u || icon_xhi || icon_attr != 0x34u ||
+      icon_tile != 0x86u || icon_y >= kX2HudBandHeight)
+    return 0;
+
+  /* Corroborate with the bar frame, slots 0-4. Do NOT demand an exact count:
+   * the bar's length varies with max health and slot 5 parks at Y=224 in most
+   * of the stage. An earlier version required all of 0-5 and therefore
+   * evaluated 5/6 and disabled itself nearly everywhere -- the HUD stayed at
+   * 4:3, which is the failure this tolerance exists to prevent. */
+  unsigned frame_slots = 0;
+  for (unsigned slot = 0; slot <= 4; slot++) {
     const unsigned w = slot * 2u;
     const unsigned x = g_ppu->oam[w] & 0xFFu;
     const unsigned y = g_ppu->oam[w] >> 8;
     const unsigned attr = g_ppu->oam[w + 1] >> 8;
-    /* X bit 8 must be clear too: a HUD sprite is never past the native edge. */
     const unsigned xhi = (g_ppu->highOam[w >> 3] >> (w & 7)) & 1u;
     if (x == 8u && !xhi && attr == 0x34u && y < kX2HudBandHeight)
-      matched++;
+      frame_slots++;
   }
-  /* Require the whole bar, not a coincidental single sprite. */
-  return matched == 6u;
+  return frame_slots >= 4u;
 }
 
 /* Call once per frame from the host's frame-prep, after g_ws_extra is known. */

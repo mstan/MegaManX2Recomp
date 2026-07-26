@@ -223,9 +223,21 @@ margin and stay symmetric at any width.
 **Cutscenes reuse slots 0-23 for actors** (the intro survey caught the hoverbike
 riders there), so shifting the range unconditionally would drag cutscene sprites
 into the margins. Rather than invent a WRAM game-state byte, the gate is the
-HUD's **own measured signature**: all six of slots 0-5 at X=8 with X bit 8 clear,
-attr `0x34`, inside the Y band. Requires the HP bar only -- the weapon bar is
-absent until a weapon is equipped and the boss bar only exists in a fight.
+HUD's **own measured signature**:
+
+* slot 0 must be the bar's **icon** -- tile `0x86`, attr `0x34`, X=8, X bit 8
+  clear, inside the Y band. Distinctive enough that an actor will not impersonate it.
+* corroborated by **at least 4 of slots 0-4** (the bar frame) matching.
+
+Requires the HP bar only -- the weapon bar is absent until a weapon is equipped
+and the boss bar only exists in a fight.
+
+**Do NOT require an exact slot count.** The first version demanded all six of
+slots 0-5 and was broken nearly everywhere: **slot 5 parks at Y=224** depending on
+max health, so the gate evaluated 5/6 and silently disabled itself, leaving the
+HUD at 4:3 through most of a stage. Measured across four save states, slots 0-4
+are always drawn (Y 80/64/50/44/28) and slot 5 is the variable one. Gating on a
+variable-length bar's length was the mistake; gate on the invariant part.
 
 Self-validating and fails safe: no signature means no shift, i.e. authentic
 placement. This is the P5 requirement, and it specifically avoids MMX1's bug of
