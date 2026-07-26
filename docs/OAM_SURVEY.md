@@ -117,3 +117,77 @@ $env:SNESRECOMP_WLOG_ADDR_CAP='400000'
 
 For gameplay coverage of the same range, a human has to drive the game to a
 stage — gameplay verdicts are the owner's, not the agent's.
+
+---
+
+# HUD slot map (measured in gameplay, 2026-07-26)
+
+From owner-supplied save states via `tools/hud_map.py`, cross-checked against
+screenshots. This **supersedes the intro-scene speculation above**: the earlier
+guess that `$00D5B8`/`$00D6D6` (slots 0-7 / 8-15) were the HUD was wrong in
+substance -- those were cutscene actors. Slots 0-5 are the HP bar, and the
+weapon bar is a *separate* column starting at slot 7.
+
+    save slot 0 : health + weapon bars, X idle, safe
+    save slot 1 : boss fight opening -- health + weapon + boss bar
+
+## The map
+
+| element | OAM slots | screen X | attr | anchor |
+|---|---|---|---|---|
+| **X health bar** | 0-5 (6 park at low fill) | **8** | `0x34` | **LEFT** |
+| **weapon / ammo bar** | 7-13 (14-15 park) | **24** | `0x36` | **LEFT** |
+| **boss health bar** | 16-22 (23 parks) | **232** | `0x34` | **RIGHT** |
+| player (X) | 16-33 varies | follows camera | `0x62` | — |
+| boss / effects | 32-71 varies | — | `0x29`, others | — |
+
+Each bar is a vertical stack of 16x16 sprites (size bit 1) sharing one X, with
+its icon as the bottom element. HP and weapon sit side by side 16px apart.
+
+## The fact that matters for 16:9
+
+**HP and weapon anchor LEFT; the boss bar anchors RIGHT.** They must be pushed in
+**opposite directions**, not shifted as one block. And the layout is symmetric
+about the screen: HP's left edge is 8px from the left; the boss bar is at X=232
+and is 16px wide, so its right edge is 248 -- also 8px from the right. So for a
+margin `m`:
+
+    HP     X:   8  ->   8 - m
+    weapon X:  24  ->  24 - m
+    boss   X: 232  -> 232 + m
+
+The engine hook is `PpuSetWsHudOamShift(g_ppu, n)`. Note MMX1 passes a single
+shift for slots 0-15 -- that is not sufficient here, because slot 16-23 must move
+the *other* way. Expect to need a signed/per-range shift, or two calls. Check
+whether the existing API can express that before assuming it can.
+
+## Caveats -- read before using these numbers
+
+1. **The boss bar was EMPTY when sampled.** The screenshot confirms it: the boss
+   bar fills progressively during the boss intro, so only slots 16, 21, 22 were
+   drawn at that instant. Slot 23 is parked directly after 22 and is almost
+   certainly part of the bar at full fill. **Re-measure with a full boss bar
+   before hardcoding the range.** Same applies to slot 6 (HP) and 14-15 (weapon).
+2. **The player can masquerade as HUD.** In a side-scroller the player is
+   screen-static while the world scrolls -- identical signature to a HUD element.
+   Two earlier attempts misreported X as HUD. The discriminator that works is
+   sampling *while a direction is held*, and even that fails during a boss intro
+   because input is locked (which is why slots 24-31 show as static in the boss
+   state -- that is X, not HUD). `attr` is the reliable secondary signal: HUD is
+   `0x34`/`0x36`, the player is `0x62`.
+3. **Two stages measured, not all.** Slot assignment looks global but has not
+   been checked in every scene (no sub-tank state, no ride armour, no
+   two-boss/co-op HUD variants).
+
+## Tooling
+
+* `tools/hud_map.py` -- loads both states and produces the table above.
+* `tools/hud_survey.py` -- single-state survey with the held-input discriminator.
+* `tools/navigate.py` -- TCP driving + screenshots with measured pixel stats.
+
+Use `loadstate <slot>` (no underscore) to load a game save state: it routes
+through `RtlSaveLoad` on the main thread and runs the `X2StateLoadExtra` /
+`X2OnStateLoaded` hooks that restore the LLE resume cursor. `load_state <file>`
+is a different, raw L3-snapshot command keyed by literal filename -- it does NOT
+touch `saves/`, and passing it a slot number silently creates a file named after
+the number.
