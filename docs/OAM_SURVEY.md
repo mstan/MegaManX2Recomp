@@ -137,7 +137,7 @@ weapon bar is a *separate* column starting at slot 7.
 |---|---|---|---|---|
 | **X health bar** | 0-5 (6 park at low fill) | **8** | `0x34` | **LEFT** |
 | **weapon / ammo bar** | 7-13 (14-15 park) | **24** | `0x36` | **LEFT** |
-| **boss health bar** | 16-22 (23 parks) | **232** | `0x34` | **RIGHT** |
+| **boss health bar** | **16-22** (7 sprites, Y 0-80) | **232** | `0x34` | **RIGHT** |
 | player (X) | 16-33 varies | follows camera | `0x62` | — |
 | boss / effects | 32-71 varies | — | `0x29`, others | — |
 
@@ -163,11 +163,10 @@ whether the existing API can express that before assuming it can.
 
 ## Caveats -- read before using these numbers
 
-1. **The boss bar was EMPTY when sampled.** The screenshot confirms it: the boss
-   bar fills progressively during the boss intro, so only slots 16, 21, 22 were
-   drawn at that instant. Slot 23 is parked directly after 22 and is almost
-   certainly part of the bar at full fill. **Re-measure with a full boss bar
-   before hardcoding the range.** Same applies to slot 6 (HP) and 14-15 (weapon).
+1. ~~The boss bar was EMPTY when sampled.~~ **RESOLVED** from a third save state
+   with the bar already filled: the boss bar is exactly slots **16-22** (7
+   sprites, Y 0-80). Slots 6, 14-15 and 23 are genuinely never used, and actors
+   start at slot 24. So the reserved HUD region is 0-23 (X1 reserves 0-15).
 2. **The player can masquerade as HUD.** In a side-scroller the player is
    screen-static while the world scrolls -- identical signature to a HUD element.
    Two earlier attempts misreported X as HUD. The discriminator that works is
@@ -191,3 +190,65 @@ through `RtlSaveLoad` on the main thread and runs the `X2StateLoadExtra` /
 is a different, raw L3-snapshot command keyed by literal filename -- it does NOT
 touch `saves/`, and passing it a slot number silently creates a file named after
 the number.
+
+
+---
+
+# 16:9 HUD anchoring — IMPLEMENTED (2026-07-26)
+
+Owner-validated visually: all three bars anchor to the widened edges correctly in
+a boss fight at 342x224.
+
+`X2ConfigureWsHud()` in `src/x2_rtl.c`, called once per frame from
+`X2Display_PreparePpuFrame()` in `src/main.c`.
+
+## No engine change was needed
+
+`PpuAdjustWidescreenHudOamX` already splits on screen X and pushes each side
+outward independently -- sprites left of `wsHudLeftEnd` by `extraLeftCur`, sprites
+at/after `wsHudRightStart` by `extraRightCur`. An earlier note here claimed MMX1's
+single-shift API could not express opposite directions; that was wrong. It only
+needed correct configuration:
+
+    PpuSetWidescreenHudSplit(g_ppu, 96 /*band*/, 64 /*leftEnd*/, 192 /*rightStart*/)
+    PpuSetWsHudOamShiftRange(g_ppu, 0, 24)
+
+HP (X=8) and weapon (X=24) fall below `leftEnd`; the boss bar (X=232) is at/above
+`rightStart`. The layout is symmetric -- HP's left edge and the boss bar's right
+edge are both 8px from their native screen edge -- so both move by the same
+margin and stay symmetric at any width.
+
+## The gate
+
+**Cutscenes reuse slots 0-23 for actors** (the intro survey caught the hoverbike
+riders there), so shifting the range unconditionally would drag cutscene sprites
+into the margins. Rather than invent a WRAM game-state byte, the gate is the
+HUD's **own measured signature**: all six of slots 0-5 at X=8 with X bit 8 clear,
+attr `0x34`, inside the Y band. Requires the HP bar only -- the weapon bar is
+absent until a weapon is equipped and the boss bar only exists in a fight.
+
+Self-validating and fails safe: no signature means no shift, i.e. authentic
+placement. This is the P5 requirement, and it specifically avoids MMX1's bug of
+gating partly on an HDMAEN mirror.
+
+## Note on the AOT prerequisite
+
+An earlier entry said widescreen was blocked on AOT coverage. That is true for
+spawn and cull, which need `apply_overrides.py` to inject into generated C -- but
+**NOT for the HUD**, which is host-side in the renderer and needed no coverage at
+all. The blocker was stated too broadly.
+
+## Widescreen checklist status (see snesrecomp/docs/WIDESCREEN_PATTERNS.md)
+
+| | |
+|---|---|
+| P5 HUD gate | done -- signature-gated |
+| HUD anchoring | done -- opposite edges, owner-validated |
+| P1-P4 background margins | **NOT DONE** -- margins show adjacent-room tiles |
+| P7-P8 cull + OAM emitter | not done |
+| P9-P12 spawn | not done |
+| P13 stage-trigger bias | not done |
+| P16 4:3 regression gate | not established |
+
+`Widescreen` remains **0** in the shipped default. It was enabled only in the
+exe-adjacent `build-trace/config.ini` for this test.

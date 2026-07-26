@@ -10,6 +10,11 @@ struct SaveLoadInfo;
 void RunOneFrameOfGame(void);
 void X2DrawPpuFrame(void);
 
+/* Per-frame 16:9 HUD anchoring. Measured slot map in
+ * docs/OAM_SURVEY.md; inert unless widescreen is active AND the
+ * health bar signature is present in OAM. */
+void X2ConfigureWsHud(void);
+
 /* LLE host execution cursor (resume PC + CpuState) — not covered by
  * snes_saveload, which snapshots the unused snes->cpu. */
 void X2StateSaveExtra(struct SaveLoadInfo *sli);

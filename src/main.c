@@ -160,11 +160,14 @@ static void X2Display_PreparePpuFrame(void) {
               (g_ppu_render_flags & kPpuRenderFlags_NewRenderer) != 0;
   PpuBeginDrawing(g_ppu, g_my_pixels, (size_t)width * 4, 0);
   PpuSetExtraSpace(g_ppu, (uint8)g_ws_extra);
-  /* Scaffold: no per-scene widescreen policy yet. The HUD OAM shift,
-   * BG3 widen and margin line-enhancer are all Mega Man X 1 findings
-   * keyed to MMX1 WRAM; Mega Man X2 needs its own survey before any of
-   * them can be re-armed. Keep the hooks wired but inert. */
-  PpuSetWsHudOamShift(g_ppu, 0);
+  /* 16:9 HUD anchoring: measured slot map in docs/OAM_SURVEY.md.
+   * HP (0-5, X=8) and weapon (7-13, X=24) anchor LEFT; the boss
+   * bar (16-22, X=232) anchors RIGHT, so they move in opposite
+   * directions. Gated on the HUD signature being present in OAM,
+   * because cutscenes reuse slots 0-23 for actors. */
+  X2ConfigureWsHud();
+  /* BG3 widen and the margin line-enhancer are Mega Man X 1
+   * findings keyed to MMX1 WRAM; not surveyed here yet. */
   PpuSetWidescreenBg3Widen(g_ppu, 0);
   PpuSetWidescreenLineEnhancer(g_ppu, NULL, NULL);
 }
@@ -1913,10 +1916,13 @@ static const char kDefaultConfigIniContent[] =
   "# spawn/cull bounds all still need doing. See docs/WIDESCREEN.md.\n"
   "Widescreen = 0\n"
   "\n"
-  "# Remove the SNES 32-sprites-per-scanline limit. OPT-IN\n"
-  "# ENHANCEMENT, off by default: the real limit is part of\n"
-  "# faithful behavior and some effects depend on it.\n"
-  "NoSpriteLimits = 0\n"
+  "# Relax the hardware 32-sprites/34-tiles-per-scanline caps, which\n"
+  "# removes sprite flicker in busy scenes. ENHANCEMENT, but ON by\n"
+  "# default (matches Mega Man X 1) because it is a pure renderer\n"
+  "# flag needing no per-title survey -- unlike Widescreen above.\n"
+  "# It does suppress the readable overflow bits at $213E, so set 0\n"
+  "# for the strictly faithful floor.\n"
+  "NoSpriteLimits = 1\n"
   "\n"
   "[Sound]\n"
   "EnableAudio = 1\n"

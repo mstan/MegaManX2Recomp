@@ -171,6 +171,74 @@ void RunOneFrameOfGame(void) {
   }
 }
 
+
+/* ── 16:9 HUD anchoring ───────────────────────────────────────────────────
+ *
+ * Measured OAM slot map (docs/OAM_SURVEY.md), confirmed in gameplay against
+ * owner-supplied save states:
+ *
+ *   HP bar      slots  0-5   screen X 8     attr 0x34   anchors LEFT
+ *   weapon bar  slots  7-13  screen X 24    attr 0x36   anchors LEFT
+ *   boss bar    slots 16-22  screen X 232   attr 0x34   anchors RIGHT
+ *   actors      slots 24+
+ *
+ * The bars anchor to OPPOSITE edges, so they cannot be shifted as one block.
+ * PpuAdjustWidescreenHudOamX already handles that: it pushes sprites left of
+ * wsHudLeftEnd outward by extraLeftCur and sprites at/after wsHudRightStart
+ * outward by extraRightCur. So this only has to configure it correctly.
+ *
+ * The layout is symmetric -- HP's left edge is 8px from the left, and the boss
+ * bar at X=232 is 16px wide so its right edge is 8px from the right -- so both
+ * sides move by the same margin and stay symmetric at any width.
+ */
+enum {
+  kX2HudSlotFirst = 0,        /* HP / weapon / boss all live in 0..23 */
+  kX2HudSlotCount = 24,       /* slot 24 onward is actors            */
+  kX2HudBandHeight = 96,      /* measured HUD Y extent is 0..80       */
+  kX2HudLeftEnd = 64,         /* HP X=8 and weapon X=24 are below this */
+  kX2HudRightStart = 192,     /* boss X=232 is at/above this          */
+};
+
+/* True when the health bar's measured signature is present in live OAM.
+ *
+ * Cutscenes reuse slots 0-23 for actors, so the shift MUST NOT be applied
+ * whenever those slots merely happen to be populated. Gating on the HUD's own
+ * fingerprint avoids inventing a WRAM game-state byte and fails safe: no
+ * signature, no shift, authentic placement. Requires only the HP bar -- the
+ * weapon bar is absent until a special weapon is equipped, and the boss bar
+ * only exists during a fight. */
+static int x2_ws_hud_present(void) {
+  if (!g_ppu) return 0;
+  unsigned matched = 0;
+  for (unsigned slot = 0; slot <= 5; slot++) {
+    const unsigned w = slot * 2u;
+    const unsigned x = g_ppu->oam[w] & 0xFFu;
+    const unsigned y = g_ppu->oam[w] >> 8;
+    const unsigned attr = g_ppu->oam[w + 1] >> 8;
+    /* X bit 8 must be clear too: a HUD sprite is never past the native edge. */
+    const unsigned xhi = (g_ppu->highOam[w >> 3] >> (w & 7)) & 1u;
+    if (x == 8u && !xhi && attr == 0x34u && y < kX2HudBandHeight)
+      matched++;
+  }
+  /* Require the whole bar, not a coincidental single sprite. */
+  return matched == 6u;
+}
+
+/* Call once per frame from the host's frame-prep, after g_ws_extra is known. */
+void X2ConfigureWsHud(void) {
+  extern bool g_ws_active;
+  if (!g_ppu) return;
+  if (!g_ws_active || !x2_ws_hud_present()) {
+    PpuSetWsHudOamShiftRange(g_ppu, 0, 0);   /* off = authentic placement */
+    PpuSetWidescreenHudSplit(g_ppu, 0, 0, 0);
+    return;
+  }
+  PpuSetWidescreenHudSplit(g_ppu, kX2HudBandHeight,
+                           kX2HudLeftEnd, kX2HudRightStart);
+  PpuSetWsHudOamShiftRange(g_ppu, kX2HudSlotFirst,
+                           kX2HudSlotCount);
+}
+
 void X2DrawPpuFrame(void) {
   /* Presentation only. IRQs are serviced inside RunOneFrameOfGame while the
    * bridge advances the beam — never mutate g_cpu here. */
