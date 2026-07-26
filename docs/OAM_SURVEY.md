@@ -264,3 +264,70 @@ all. The blocker was stated too broadly.
 
 `Widescreen` remains **0** in the shipped default. It was enabled only in the
 exe-adjacent `build-trace/config.ini` for this test.
+
+---
+
+# Background layer survey (measured 2026-07-26) — P1-P4
+
+Measured from `get_ppu_state` in two owner save states (boss room, scrolling
+stage). This is the input to the background-margin work; nothing implemented yet.
+
+## Configuration
+
+    bgmode 1,  screenEnabled main = 0x13  ->  BG1 + BG2 + OBJ   (BG3 NOT enabled)
+
+    layer | tilemap base | size  | scroll behaviour
+    BG1   | $5000        | 64x32 | 385 -> 426 over 30 frames (camera rate)
+    BG2   | $5800        | 64x32 | 192 -> 213 over 30 frames (HALF rate = parallax)
+    BG3   | $0800        | 32x64 | not enabled in either state
+    BG4   | $0000        | 32x32 | not enabled
+
+So only **two** layers need margin work, not four. BG2 scrolls at exactly half
+BG1's rate, so it is a parallax layer.
+
+## The mechanism, and why the margins are wrong
+
+**Both BG1 and BG2 are 64x32** — a 512px-wide tilemap holding two adjacent
+32-column screens. The visible 256px window sits inside that 512px map, so a
+margin column past the native edge reads **the other half of the map**.
+
+That half is not garbage: it is real level data. It is whichever section the game
+last streamed in. The game rewrites a whole half at a time as camera-line staging
+triggers fire, so:
+
+* moving **into** a freshly staged half, the margin is correct;
+* moving **toward** a half that still holds the *previous* section, the margin
+  shows that older content.
+
+Owner-reported symptom matches exactly: wrong on both left and right, "as you
+walk toward it" — i.e. the LEADING margin is stale.
+
+**This is the same scheme as Mega Man X 1's BG2** (rolling half-map, section
+staged a half at a time). The mechanism transfers; the trigger addresses do not.
+
+## Two candidate fixes, and only one is available now
+
+1. **Host-side margin history (P2/P4)** — `WsShadow*`: capture columns as they
+   scroll through the native view, key them to an unwrapped world coordinate, and
+   serve margins from that instead of from the wrapped map. Periodic rows can fold
+   (`WsShadowSetPeriodicFold`) rather than using history. **Needs no AOT
+   coverage** — it is entirely renderer-side, like the HUD shift turned out to be.
+   Currently stubbed: `X2Display_PrepareBg2Shadow()` calls `WsShadowReset()` +
+   `WsShadowFrame()`, i.e. deliberately deactivated, which is why margins fall
+   back to plain map wrap.
+
+2. **Stage-trigger bias (P13)** — fire the camera-line staging trigger early by
+   the margin so the leading half is loaded before it becomes visible. This is
+   what MMX1 does, and it is the real fix for the leading edge. **Requires AOT
+   coverage**, since it means injecting into generated C at the trigger compare.
+
+Recommended order: (1) first, because it is available immediately and carries no
+simulation risk; (2) once bank `$00`/`$13` coverage exists. Note P13's constraint:
+the lead must not exceed the margin, or CHR paging garbles.
+
+## Not yet measured
+
+* Whether BG1's and BG2's margins need different treatment (BG2 being parallax
+  and possibly periodic).
+* Which WRAM addresses hold X2's camera and the staging trigger lines.
+* Whether BG3 becomes active in other scenes (menus, intro, other stages).
