@@ -1,8 +1,11 @@
 # Mega Man X2 — OAM survey (measured, read-only)
 
-Not generated. `docs/WIDESCREEN.md` is written by
-`_tools/scaffold_mmx_sequel.py` and will be overwritten; this file is
-hand-maintained measured data. Append to it as more is surveyed.
+Hand-maintained measured data. Append to it as more is surveyed.
+
+(Historical note: this repo was originally stood up by a scaffold generator
+that owned several files, including `docs/WIDESCREEN.md`. That generator was
+retired on 2026-07-26 — every file in this repo is now owned here and edited
+directly. Nothing regenerates over your changes.)
 
 Measured 2026-07-26 from the always-on write-log ring
 (`SNESRECOMP_WLOG_ADDR=6000:63FF` + `SNESRECOMP_WLOG_STATE=1`, armed at process
