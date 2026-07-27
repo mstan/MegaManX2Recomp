@@ -392,4 +392,22 @@ reads X2's retained level map, the way MMX1's `MmxDisplay_PrefillBg2Shadow` read
   floor bands. They need different margin sources.
 * *Whether BG3 becomes active in other scenes* — **yes.** Slot 4 renders with
   `screenEnabled main = 0x17` (BG1+BG2+BG3+OBJ), not the `0x13` seen elsewhere.
-  Margin work must handle BG3 or explicitly stand down when it is enabled.
+
+### BG3 surveyed (2026-07-26)
+
+Slot 4 is the **stage-select menu** (boss portrait grid, "Weather Control Stage
+/ Boss: Wire Sponge") — a static screen: every layer sits at `hScroll=vScroll=0`.
+
+    BG3: base $0800, 32x64, uniform=8 periodic=0 aperiodic=20
+
+Two things fall out, and the second is the one that bites:
+
+1. BG3 is a **menu** layer here, and a gameplay gate excludes menus anyway. Add
+   an explicit `main & 0x04` stand-down regardless rather than relying on that
+   correlation holding in every scene.
+2. **Map geometry is scene-dependent, not fixed.** In slot 4 BG1 is `32x64`,
+   while in gameplay (slots 0/5) the same layer is `64x32`. Margin code MUST
+   read the live `BGnSC` size bits per frame — anything that hardcodes 64x32
+   will index the wrong screen half on menu screens. BG3 at 32x64 is only 32
+   columns wide, so it has no second horizontal screen at all: its margins wrap
+   onto the visible columns rather than exposing a stale half.
