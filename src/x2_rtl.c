@@ -341,7 +341,13 @@ static uint16_t x2_bg_vram_word(const X2BgStream *s, uint32_t px,
 static bool x2_bg_stream_valid(const X2BgStream *s, int32_t wx, int32_t wy) {
   if (wx < 0 || wy < 0)
     return false;
+  /* Boot/menu frames can already have the gameplay BG mode/map bases while
+   * the stream-source cluster is still zero. Reject before cart_read so an
+   * uninitialized pointer cannot create a false off-rails diagnostic. */
+  if (x2_wram16(s->mtPtrAddr) < 0x8000)
+    return false;
   int miss = 0, modal = 0;
+  uint16_t modal_tile = 0;
   uint16_t got_v[12];
   for (int i = 0; i < 12; i++) {
     uint32_t px = (uint32_t)wx + 10u + (uint32_t)i * 20u;        /* 10..230 */
@@ -367,10 +373,45 @@ static bool x2_bg_stream_valid(const X2BgStream *s, int32_t wx, int32_t wy) {
     int same = 0;
     for (int j = 0; j < 12; j++)
       same += (got_v[j] == got_v[i]);
-    if (same > modal)
+    if (same > modal) {
       modal = same;
+      modal_tile = got_v[i];
+    }
   }
-  return modal <= 9;
+  if (modal <= 9)
+    return true;
+
+  /*
+   * A sparse level screen can legitimately make the quick sample almost
+   * uniform. Slot 0's vertical fall is mostly empty until the terrain scrolls
+   * into view, so the old diversity gate disabled exact gutters and exposed
+   * wrapped stale rows at the widescreen edges.
+   *
+   * Preserve the object-layer safeguard by looking for positive evidence:
+   * scan the native view for six source tiles that differ from the modal
+   * entry and require each one to reproduce VRAM. A repurposed object layer
+   * whose level source is blank finds no proof; one whose live objects
+   * disagree with that source fails the comparisons.
+   */
+  int proof = 0, proof_miss = 0;
+  for (uint32_t y = 4; y < 224; y += 8) {
+    for (uint32_t x = 4; x < 256; x += 8) {
+      uint32_t px = (uint32_t)wx + x;
+      uint32_t py = (uint32_t)wy + y;
+      uint16_t want = x2_bg_world_tile(s, px, py);
+      if (want == modal_tile)
+        continue;
+      uint16_t got =
+          g_ppu->vram[x2_bg_vram_word(s, px, py) & 0x7FFF];
+      if (want == got) {
+        if (++proof >= 6)
+          return true;
+      } else if (++proof_miss > 1) {
+        return false;
+      }
+    }
+  }
+  return false;
 }
 
 /* Call once per frame from the host's frame-prep, after g_ws_extra is
