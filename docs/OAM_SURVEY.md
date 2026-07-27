@@ -328,9 +328,68 @@ Recommended order: (1) first, because it is available immediately and carries no
 simulation risk; (2) once bank `$00`/`$13` coverage exists. Note P13's constraint:
 the lead must not exceed the margin, or CHR paging garbles.
 
+## Periodicity proof (measured 2026-07-26) — P3 does NOT transfer
+
+P3 says margins may fold onto a proven per-row period instead of using history.
+That is Mega Man X 1's *primary* BG2 margin source. **It is not available here.**
+
+Measured across five owner save states by reading the always-on frame ring
+(`dump_frame_vram`) and, per row, searching the 32 natively displayed columns
+for the smallest exact period:
+
+    scene    BG1 periodic   BG2 periodic   uniform (BG1/BG2)   other-half agree
+    slot 0   2 rows (p=2)   0              0 / 0                15% / 2%
+    slot 1   0              0              2 / 0                 5% / 0%
+    slot 2   0              0              2 / 0                 5% / 0%
+    slot 4   0              0             13 / 12                0% / 31%
+    slot 5   6 rows (p=8)   0              0 / 10               45% / 43%
+
+**BG2 has zero periodic rows in every scene surveyed.** BG1 is periodic only in
+narrow bands (slot 5 rows 26-31 at p=8, slot 0 rows 20-21 at p=2) — repeating
+floor, not a foldable layer. Do not port MMX1's `WsShadowSetPeriodicFold` as the
+primary source and expect it to work.
+
+What the same measurement *did* find usable:
+
+* **Uniform rows are common** (slot 4: 13 BG1 / 12 BG2; slot 5: 10 BG2 rows, all
+  `$1403`). A uniform row is period-1 and its margin can be filled exactly.
+* **Other-half agreement is 0-45%**, confirming directly that the off-screen half
+  holds genuinely different content. This is the stale-margin mechanism measured
+  rather than inferred.
+
+### Consequence for the fix
+
+Host-side history (P2/P4) serves columns *already seen scrolling through the
+native view*, so it fixes the **trailing** margin. It structurally cannot fix the
+**leading** margin: those columns have never been displayed, so there is nothing
+captured to serve, and it falls back to map wrap. Owner-confirmed symptom
+(2026-07-26): *"if you walk long enough in one direction you still get stale
+frames"* — sustained travel keeps re-exposing the leading edge, so this is not a
+transient that settles.
+
+Margin sources, by what they can actually cover:
+
+    trailing margin        world-keyed history        available now
+    uniform rows           fill with the row value    available now
+    leading, world-anchored  real level data          NEEDS P13 or prefill
+
+So Fix 1 is necessary but **not sufficient** for the reported symptom. The
+leading edge needs either P13 stage-trigger bias (now unblocked — bank `$00` and
+`$13` AOT coverage exists as of the 2026-07-26 profile harvest) or a prefill that
+reads X2's retained level map, the way MMX1's `MmxDisplay_PrefillBg2Shadow` reads
+`$EC00`/`$A600`. X2's equivalent addresses are still unsurveyed.
+
 ## Not yet measured
 
-* Whether BG1's and BG2's margins need different treatment (BG2 being parallax
-  and possibly periodic).
 * Which WRAM addresses hold X2's camera and the staging trigger lines.
-* Whether BG3 becomes active in other scenes (menus, intro, other stages).
+* Where X2's retained level map lives (the MMX1 `$EC00`/`$A600` equivalent),
+  which is what a leading-edge prefill would have to read.
+
+## Measured since (answers to earlier open questions)
+
+* *Whether BG1/BG2 need different treatment* — **yes.** BG2 is never periodic and
+  is a half-rate parallax layer; BG1 is camera-rate with occasional periodic
+  floor bands. They need different margin sources.
+* *Whether BG3 becomes active in other scenes* — **yes.** Slot 4 renders with
+  `screenEnabled main = 0x17` (BG1+BG2+BG3+OBJ), not the `0x13` seen elsewhere.
+  Margin work must handle BG3 or explicitly stand down when it is enabled.
