@@ -422,13 +422,43 @@ these — they are DMA, so there is no recomp-function context. Do not expect
 arm-based and answers `"recomp vram trace inactive"`; `vwring_get` is the
 always-on one and is what to use.)
 
+## No readable retained map found — this weakens the prefill plan
+
+Tried to find a buffer a prefill could read *ahead of* the camera. Method: take
+a streamed column upload's payload in **ring order** (which is DMA source order
+— note a 64x32 column is STRIDED in VRAM, rows 64 bytes apart, so
+longest-contiguous-run does not reconstruct a column and will mislead you), then
+search for that byte sequence.
+
+Result for BG1's steady-state 128-byte column uploads, across repeated walks:
+
+    not present in WRAM (snapshot at the upload frame)
+    not present in ROM  (whole 1.5MB headerless image, verbatim search)
+
+Neither source holds the bytes. Together with the earlier partial hit (a 56-byte
+BG1 run at `$7E:F004`) the likely explanation is that **X2 composes tilemap
+columns from metatiles** — the level is stored as compressed/indexed metatile
+references and the expanded tile entries exist only transiently while being
+written. If so there is no MMX1-style retained map to point a prefill at.
+
+**Consequence, and it changes the recommendation.** Prefill-first was chosen
+because it is renderer-side and carries no simulation risk. That reasoning holds
+only if the source data can simply be *read*. It appears it cannot: a prefill
+would have to replicate X2's metatile expansion, which is a much larger job than
+"read `$EC00` like MMX1 does" and is no longer obviously cheaper or safer than
+P13. **Re-decide between prefill and P13 before building either.**
+
+Not disproven, still worth one check: the whole-half 2048-byte staging burst DID
+match WRAM `$7E:83FF`. That path may still be readable even if the per-column
+streaming is not — but a whole-half buffer only helps at section boundaries, not
+during the continuous scrolling that produces the reported symptom.
+
 ## Not yet measured
 
 * Which WRAM addresses hold X2's camera and the staging trigger lines.
-* Which of `$7E:8400` / `$7E:F0xx` / `$7F:B000` is the *retained* level map
-  versus a transient per-frame column buffer — a prefill needs the retained one,
-  since it must supply columns the camera has NOT reached yet.
-* Where the ROM-sourced BG1 columns come from.
+* Whether `$7E:8400` leads the camera or is filled just-in-time (the
+  retained-vs-scratch test never caught a whole-half burst in the walk window).
+* X2's metatile format and expansion routine, if the prefill route is kept.
 
 ## Measured since (answers to earlier open questions)
 
