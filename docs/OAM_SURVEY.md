@@ -379,11 +379,56 @@ leading edge needs either P13 stage-trigger bias (now unblocked — bank `$00` a
 reads X2's retained level map, the way MMX1's `MmxDisplay_PrefillBg2Shadow` reads
 `$EC00`/`$A600`. X2's equivalent addresses are still unsurveyed.
 
+## Staging sources LOCATED (measured 2026-07-26)
+
+Found with the **always-on** VRAM byte-write ring (`vwring_get <lo> <hi> [n]`,
+`debug_server.c` — records every VRAM byte write, PIO and DMA alike, never
+armed). Method, which is reusable and does not rely on catching a moment:
+
+1. `loadstate` a gameplay state, walk the camera briefly (staging only fires
+   while scrolling — an earlier attempt sampled a static stage-select screen and
+   saw only CHR paging), then `clear_controller`.
+2. Query the ring backward for byte writes into BG1 `$A000-$AFFF` (word `$5000`)
+   and BG2 `$B000-$BFFF` (word `$5800`). The ring records the VALUE written.
+3. Reconstruct a burst's payload in address order and search a WRAM snapshot
+   from the SAME frame for that exact byte sequence. Whatever contains it is the
+   source. (Match against a contemporaneous snapshot — a first pass used one
+   ~3000 frames later and the BG2 buffer had already been reused.)
+
+Two write shapes, measured directly:
+
+* **2048-byte bursts** = 1024 words = one full 32x32 screen — the whole-half
+  section staging.
+* **128 bytes/frame while scrolling** = per-column streaming.
+
+Sources found — note this is **multi-source**, not one buffer:
+
+    BG1  whole-half 2068B -> $A7EC   from WRAM $7E:83FF  (~$7E:8400)
+    BG1  column      56B  -> $A008   from WRAM $7E:F004
+    BG2  column     128B  -> $BC00   from WRAM $7F:B000
+    BG1  column     128B  -> $A000   NOT in WRAM -- ROM-sourced
+
+`$7E:F0xx` is independently corroborated by DMA sampling during the same walk
+(`$7E:F088`, `$7E:F110`, `$7E:F140` -> `$2118`). ROM sources seen in the same
+window cluster in bank `$2D` at regular ~0x200-0x400 spacing, which is the CHR
+stream, not tilemap.
+
+A leading-edge prefill must therefore read more than one buffer, and some BG1
+content never lands in WRAM at all.
+
+**Note on tooling:** the writer-attribution field (`fn`) is `(none)` for all of
+these — they are DMA, so there is no recomp-function context. Do not expect
+`fn` to name a staging routine here. (The separate `s_vram_trace` ring IS
+arm-based and answers `"recomp vram trace inactive"`; `vwring_get` is the
+always-on one and is what to use.)
+
 ## Not yet measured
 
 * Which WRAM addresses hold X2's camera and the staging trigger lines.
-* Where X2's retained level map lives (the MMX1 `$EC00`/`$A600` equivalent),
-  which is what a leading-edge prefill would have to read.
+* Which of `$7E:8400` / `$7E:F0xx` / `$7F:B000` is the *retained* level map
+  versus a transient per-frame column buffer — a prefill needs the retained one,
+  since it must supply columns the camera has NOT reached yet.
+* Where the ROM-sourced BG1 columns come from.
 
 ## Measured since (answers to earlier open questions)
 
