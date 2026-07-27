@@ -341,18 +341,36 @@ static uint16_t x2_bg_vram_word(const X2BgStream *s, uint32_t px,
 static bool x2_bg_stream_valid(const X2BgStream *s, int32_t wx, int32_t wy) {
   if (wx < 0 || wy < 0)
     return false;
-  int miss = 0;
+  int miss = 0, modal = 0;
+  uint16_t got_v[12];
   for (int i = 0; i < 12; i++) {
     uint32_t px = (uint32_t)wx + 10u + (uint32_t)i * 20u;        /* 10..230 */
     uint32_t py = (uint32_t)wy + 12u + (uint32_t)(i % 6) * 36u;  /* 12..192 */
     uint16_t want = x2_bg_world_tile(s, px, py);
     uint16_t got = g_ppu->vram[x2_bg_vram_word(s, px, py) & 0x7FFF];
+    got_v[i] = got;
     if (want != got)
       miss++;
   }
   /* One mismatch tolerated: a single in-flight column upload must not
    * flicker the margins off for a frame. Two or more = not our scene. */
-  return miss <= 1;
+  if (miss > 1)
+    return false;
+  /* Diversity: a near-uniform native sample proves nothing — some scenes
+   * repurpose BG2 as a mostly-transparent OBJECT layer (X-Hunter tower
+   * lifts live in the BG2 map and move by scroll). There the provider's
+   * "level data" is all blank, matches trivially, and would erase the
+   * object in the gutters (owner-reported half-culled platforms). Require
+   * real structure in the view; otherwise authentic map wrap serves the
+   * object correctly. */
+  for (int i = 0; i < 12; i++) {
+    int same = 0;
+    for (int j = 0; j < 12; j++)
+      same += (got_v[j] == got_v[i]);
+    if (same > modal)
+      modal = same;
+  }
+  return modal <= 9;
 }
 
 /* Call once per frame from the host's frame-prep, after g_ws_extra is
@@ -426,6 +444,11 @@ void X2ConfigureWsBgMargins(void) {
       wyp[l] = wy;
       WsShadowSetWorld(l, (uint32_t)wx, (uint32_t)wy);
       WsShadowSetBlankTile(l, -1); /* miss = authentic map wrap */
+      /* Moving platforms are drawn INTO the BG1 tilemap; the widened
+       * object windows make the game draw them in the gutters, and the
+       * exact refill below must yield to those writes or platforms get
+       * erased at the native boundary (owner-reported half-culling). */
+      WsShadowSetRespectGameWrites(l, 60);
     }
   }
 
@@ -453,7 +476,13 @@ void X2ConfigureWsBgMargins(void) {
         {(wxp[l] - margin) >> 3, (wxp[l] - 1) >> 3},          /* west  */
         {(wxp[l] + 256) >> 3, (wxp[l] + 255 + margin) >> 3},  /* east  */
     };
-    const int32_t ty0 = wyp[l] >> 3, ty1 = (wyp[l] + 239) >> 3;
+    /* Rows: WsShadowTile folds the renderer's wrapped Y into anchor±512,
+     * and HDMA parallax bands can present lines far from the frame vScroll
+     * (X-Hunter tower: millions of margin misses with a 30-row fill). Cover
+     * the whole fold range; ~94 rows x ~14 cols is still trivial. */
+    int32_t ty0 = (wyp[l] - 256) >> 3, ty1 = (wyp[l] + 491) >> 3;
+    if (ty0 < 0)
+      ty0 = 0;
     for (int r = 0; r < 2; r++) {
       for (int32_t tx = tx_rng[r][0]; tx <= tx_rng[r][1]; tx++) {
         if (tx < 0)

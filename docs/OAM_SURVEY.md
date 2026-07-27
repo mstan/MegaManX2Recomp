@@ -622,6 +622,43 @@ content exists); (2) margins can show adjacent-layout rooms beyond camera
 clamps — real level data, "wrong-but-plausible", revisit only if the owner
 flags it; (3) `$2105` bit-4/5 scenes (16x16 tiles) deliberately stand down.
 
+## Object-layer scenes: the diversity gate (owner-reported half-culling)
+
+Some scenes repurpose a BG as a mostly-transparent OBJECT layer: the
+X-Hunter tower lifts live in the **BG2 tilemap** and move by *scroll*, not
+rewrites (zero tilemap writes in the vwring while a lift moves). There the
+provider's "level data" is blank, matches a blank native sample trivially,
+and the margin fill ERASED the lift outside the native 256 (the owner's
+half-culled platforms, cut exactly at the native boundary). Fix, two parts:
+
+* `x2_bg_stream_valid` now also requires **sample diversity** (modal native
+  entry <= 9 of 12): a near-uniform native view proves nothing, so the
+  layer stands down and authentic map wrap serves the object correctly —
+  measured: the lift renders fully across the west gutter, BG1 stays
+  exact-filled with 0 misses.
+* Engine `WsShadowSetRespectGameWrites(layer, 60)` (ws_shadow.c): ForceTile
+  yields to world cells the game itself wrote within 60 frames, so objects
+  genuinely DRAWN into a diverse tilemap can't be erased by the refill
+  either. Stamps ride the previously-dead per-cell `cooldown` buffer,
+  fed from WsShadowOnVramWrite.
+
+Also fixed here: the fill's row range now covers the full wrapped-Y fold
+(anchor-256 .. anchor+491) — the tower's HDMA parallax bands consulted BG2
+rows far from the frame vScroll and racked up millions of margin misses
+against the old 30-row fill (found via `ws_shadow_stats`).
+
+## Rocket platforms (rain stage): spawn pop-in — OPEN, lead recorded
+
+The flying platform type at `$07:DC5A` (trampoline `$00:FD36`): its CULL
+routes through `$07:DEA0`, which the window sweep already widened (matches
+the owner's "they cull in 16:9"). Its SPAWN position source is NOT the
+swept idiom — slot inits come via `bank_07_DCD6`/`DD4B` (and a
+`bank_03_EBD7` path), and the `#$100` in DCD6 is a dp$1C timer compare,
+not a camera offset. Next step needs a survivable repro (the probe X dies
+in the spike pit): either a save state standing before the pit with full
+health, or owner riding one while `SNESRECOMP_WLOG_ADDR=1818:1D17` runs —
+then trace the +$05 world-X store back to its source.
+
 Note: the "slot 4 = stage-select menu" line in the periodicity table above
 is stale — the owner's save slots have changed; slot 4 is now Wire Sponge
 gameplay (capsule tower). The margin gate self-validates per frame, so save
