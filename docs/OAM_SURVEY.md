@@ -698,12 +698,23 @@ enumerate which of the 15 sites are sleep checks), or advance the frontier
 target in $00:E08F/DE41/DE9E by the margin and prove the compose logic
 tolerates it (the renderer-side margin fill already covers the visuals).
 
-## Also open (owner-reported, low priority)
+## Weather overlays: measured + FIXED (owner rain save, slot 8)
 
-Weather HDMA effects (heatwave shimmer, rain) stop at — or garble in — the
-margins. This is the per-line-effect class MMX1 handled with
-`PpuSetWidescreenLineEnhancer`; X2 currently passes NULL. Needs its own
-survey of the weather HDMA tables.
+The rain is NOT sprites and NOT HDMA: it is **BG3 alone on the subscreen**
+(TS=$04, TM=$1B lacks BG3), a static 32x32 streak texture at BG3SC=$0C
+animated purely by fast diagonal BG3 scroll, blended over the scene via
+color math. Some rain is also baked into the BG1/BG2 level tiles (CHR
+animated), which the margin fill already carried into the gutters — the
+missing part was the subscreen overlay, clamped by the engine's default
+BG3 policy (`PpuSetWidescreenBg3Widen(g_ppu, 0)`).
+
+Fix: widen BG3 exactly on the overlay signature (subscreen==BG3-only AND
+main screen without BG3) in `X2Display_PreparePpuFrame`. The 32-wide map
+wraps in the margins, which tiles the repeating rain texture seamlessly.
+Menus (BG3 on main) keep the authentic clamp. A/B: east-gutter bright
+rain pixels 478 (on) vs 198 (off), native region identical. Kill-switch
+`SNESRECOMP_WS_BG3=0`. The heat shimmer is expected to be the same
+mechanism (unverified in play).
 
 ### BG3 surveyed (2026-07-26)
 

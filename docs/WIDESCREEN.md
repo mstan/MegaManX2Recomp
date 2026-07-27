@@ -16,11 +16,19 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   wired into regen.sh). Enemies act and render in the gutters
   (screenshot-verified). Kill-switch `SNESRECOMP_WS_SPAWN=0`.
 
+* **Weather overlays (rain, and by signature the heat shimmer)** — the
+  weather is BG3 alone on the SUBSCREEN blended via color math (measured
+  from the owner's rain save: BG3SC=$0C 32x32 static streak texture,
+  animated purely by scroll). `X2Display_PreparePpuFrame` widens BG3
+  exactly for that signature (sub==$04, main lacks BG3); menus keep the
+  clamp. A/B-measured: 478 vs 198 bright rain pixels in the east gutter,
+  native identical. Kill-switch `SNESRECOMP_WS_BG3=0`.
+
 Still open before the toggle ships:
 * **the `$09DD` stream-frontier gate** — frontier-gated enemy types still
   wake at the native edge (see OAM_SURVEY.md "REMAINING pop-in source");
-* **weather HDMA effects** (heatwave/rain) stop at or garble in the margins
-  — the PpuSetWidescreenLineEnhancer class, unsurveyed;
+* heat-shimmer visual confirmation in play (same mechanism as rain, so the
+  BG3 gate should cover it — unverified);
 * a projectile/cull sweep (inlined window copies in banks 02/07) once the
   above land.
 

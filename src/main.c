@@ -166,9 +166,25 @@ static void X2Display_PreparePpuFrame(void) {
    * directions. Gated on the HUD signature being present in OAM,
    * because cutscenes reuse slots 0-23 for actors. */
   X2ConfigureWsHud();
-  /* BG3 widen and the margin line-enhancer are Mega Man X 1
-   * findings keyed to MMX1 WRAM; not surveyed here yet. */
-  PpuSetWidescreenBg3Widen(g_ppu, 0);
+  /* BG3 is normally a HUD/text layer and stays clamped to the native 256
+   * columns. Wire Sponge's weather overlays (rain, heat shimmer) are the
+   * exception: gameplay puts BG3 ALONE on the SUBSCREEN (TS=$04, TM lacks
+   * BG3) and blends it via color math — measured from the owner's rain
+   * save (BG3SC=$0C, 32x32, drifting scroll). Widen BG3 for exactly that
+   * signature so the weather fills 16:9; the 32-wide map wraps, which
+   * tiles the repeating rain pattern seamlessly. Menus (BG3 on the main
+   * screen) keep the authentic clamp. */
+  {
+    static int s_bg3_enabled = -1;
+    if (s_bg3_enabled < 0) {
+      const char *e = getenv("SNESRECOMP_WS_BG3");
+      s_bg3_enabled = (e && e[0] == '0') ? 0 : 1;
+    }
+    bool bg3_sub_overlay = s_bg3_enabled &&
+                           g_ppu->screenEnabled[1] == 0x04 &&
+                           !(g_ppu->screenEnabled[0] & 0x04);
+    PpuSetWidescreenBg3Widen(g_ppu, bg3_sub_overlay ? 1 : 0);
+  }
   PpuSetWidescreenLineEnhancer(g_ppu, NULL, NULL);
 }
 
