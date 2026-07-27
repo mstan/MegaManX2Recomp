@@ -453,7 +453,53 @@ match WRAM `$7E:83FF`. That path may still be readable even if the per-column
 streaming is not — but a whole-half buffer only helps at section boundaries, not
 during the continuous scrolling that produces the reported symptom.
 
-## The scenery-upload routine, found statically (2026-07-26)
+## CORRECTION + real mechanism: it is a REQUEST QUEUE, not a camera trigger
+
+The section below claimed `$00:CF80 -> $00:CB05` is the upload choke point and
+that CF80 is CB05's only caller. **That was wrong**, and the error was a bad
+attribution script: an awk pass that only recognised `RecompReturn <fn>(`
+definitions skipped over CB05's `void bank_00_CB05(...)` mode-alias wrapper and
+credited a line inside it (`bank00_part09_v2.c:3024`, `case 3: _r =
+bank_00_CB05_M1X1(cpu);`) to the preceding function. That line is CB05
+dispatching to *itself* by M/X mode, not CF80 calling CB05.
+
+Verified corrections:
+
+* **CF80 has ZERO direct callers in generated C.** It is reached only through
+  `g_dispatch_table` (`dispatch_v2.c:5307`). Its two real callers are ROM
+  `$00:A7D9` (main loop) and `$00:CF49`, both of which run on the interpreter
+  tier. Confirmed against the ROM: exactly two `20 80 CF` byte sequences exist
+  in the whole image, at file +0x0027D9 and +0x004F49.
+* **CF80 does not call CB05.** It dispatches indirectly to `$00:F833`. CB05
+  JSLs `$08:E484` and likewise has no direct C caller.
+
+**There is no camera-line compare to bias.** CF80 runs every frame and is a
+no-op unless a request is queued. The gate is a counter at WRAM **`$0AE8`**:
+`bank00_part09_v2.c:2719` sets `D = $0AE8`, `:2742` reads it, `:2747` branches
+to `L_CF93` (skip everything) when it is zero. Verified by direct read.
+
+Producers of `$0AE8`:
+
+    INC $0AE8 at ROM $01:CE17   bank01_part09_v2.c:8960
+        guarded by stage ID $1FAD != #$0B (cmp :8879, bne :8885)
+        reached via object-AI $00:FDE0 -> $01:CD45 -> $01:CD98 -> $01:CDB5,
+        which tests object flag byte D+$0F bits 7 and 6
+    bitmask reload at ROM $08:C335/$08:C34C   bank08_part02_v2.c:2019-2055
+        consumes the $1FD0 bitmask that the chain above sets
+    cleared to 0 at ROM $08:A695              bank08_part04_v2.c:7301 (level init)
+
+So X2 stages scenery from a **request queue driven by object/trigger logic**,
+not from a camera crossing a line. "Fire the trigger early" (P13 as MMX1 does
+it) does not map onto this design as a one-value change. Making uploads happen
+sooner means making the queue get *populated* sooner, which lives in the object
+AI that sets the trigger object's flag bits — not yet traced.
+
+**Tooling trap found while doing this:** the harness `Grep` tool returns ZERO
+matches inside `src/gen/` because that directory is gitignored (`/src/gen/*`)
+and ripgrep honours ignore files. Generated code must be searched with plain
+`grep`, or you will conclude a symbol does not exist when it does.
+
+## The scenery-upload routine, found statically (2026-07-26) — SEE CORRECTION ABOVE
 
 Owner steer: any approach is acceptable provided it does not cause frame lag or
 crash risk, and a game-specific override is fine for now. That favours the
