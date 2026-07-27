@@ -184,143 +184,14 @@ bool X2Display_IsWidescreenEnabled(void) { return g_config.widescreen; }
 bool X2Display_IsWidescreenActive(void) { return g_ws_active; }
 int X2Display_GetCurrentFrameWidth(void) { return g_snes_width > 0 ? g_snes_width : 256; }
 
-/* Widescreen BG margin history for BG1 + BG2.
- *
- * WHY THIS SHAPE, and why it is NOT Mega Man X 1's (measured 2026-07-26,
- * docs/OAM_SURVEY.md):
- *
- *   * MMX1 folds BG2 onto a proven horizontal period. X2 CANNOT: BG2 has
- *     ZERO periodic rows in every scene surveyed, so WsShadowSetPeriodicFold
- *     would compile, run, and silently do nothing.
- *   * MMX1 prefills from a retained level map at $EC00/$A600. X2 has no
- *     readable equivalent -- its streamed tilemap columns appear in neither
- *     WRAM nor ROM verbatim, so it evidently composes them from metatiles.
- *
- * What is left, and what this does:
- *
- *   retained history  BOTH X2 layers are 64x32 -- a 512px map showing a 256px
- *                     window. Scrolling right, the game recycles the columns
- *                     that just left the view to hold content far ahead, so
- *                     the map cells immediately BEHIND the camera are the most
- *                     recently overwritten. That is why the trailing gutter
- *                     shows alien scenery. History serves those columns from
- *                     what actually scrolled through the native view.
- *   ExtendEdges       repeats the nearest captured viewport-edge column into
- *                     whatever margin history cannot cover (the leading edge,
- *                     whose content has never been displayed). Documented for
- *                     exactly this case: a 256px streamer with no CPU-side map
- *                     buffer to prefill from. An approximation, but a bounded
- *                     one -- far better than rendering a different section.
- *
- * Scroll comes from the PPU registers actually rendered this frame, never a
- * WRAM camera mirror (P1/P4) -- that off-by-one is what produced the earlier
- * margin-shift bug. The 10-bit value is unwrapped into a monotonic world
- * coordinate here.
- *
- * Gameplay only. The stage-select menu enables BG3 (main=0x17) and changes map
- * geometry (BG1 becomes 32x64 there), so anything assuming 64x32 would index
- * the wrong screen half. Kill-switch: SNESRECOMP_WS_BG_HISTORY=0. */
+/* Widescreen BG2 history/prefill is a per-game reverse-engineering job
+ * (Mega Man X 1's version read its retained level map at $EC00/$A600).
+ * Until Mega Man X2's streamer is surveyed, register an empty shadow frame
+ * so the renderer-side margin cache stays deactivated rather than
+ * serving stale tiles. */
 static void X2Display_PrepareBg2Shadow(void) {
-  enum { kX2WsLayers = 2 };   /* BG1 = 0, BG2 = 1 */
-  static bool s_was_active;
-  static int s_enabled = -1;
-  static uint32_t s_world_x[kX2WsLayers], s_world_y[kX2WsLayers];
-  static uint16_t s_prev_h[kX2WsLayers], s_prev_v[kX2WsLayers];
-
-  if (s_enabled < 0) {
-    const char *e = getenv("SNESRECOMP_WS_BG_HISTORY");
-    s_enabled = (e && e[0] == '0') ? 0 : 1;
-  }
-
-  const uint8 main_screen = g_ppu ? g_ppu->screenEnabled[0] : 0u;
-  /* BG1+BG2+OBJ with BG3 OFF is the gameplay signature; 0x17 is the menu. */
-  const bool gameplay_layers =
-      (main_screen & 0x04u) == 0u && (main_screen & 0x03u) == 0x03u;
-  const bool active = s_enabled && g_ws_active && g_ppu && gameplay_layers;
-
-  if (!active) {
-    if (s_was_active)
-      WsShadowReset();
-    s_was_active = false;
-    /* A frame with no registration deactivates the renderer-side cache, which
-     * falls back to authentic plain map wrap rather than serving stale tiles. */
-    WsShadowFrame(g_ppu);
-    return;
-  }
-
-  if (!s_was_active)
-    WsShadowReset();
-
-  /* Margin budget in tiles, plus slop, so west history is kept exactly as far
-   * as the gutter can show and no further. */
-  const int west_keep_tiles = (g_ws_extra + 7) / 8 + 2;
-
-  for (int layer = 0; layer < kX2WsLayers; layer++) {
-    const uint16_t h = (uint16_t)(g_ppu->hScroll[layer] & 0x03ffu);
-    const uint16_t v = (uint16_t)(g_ppu->vScroll[layer] & 0x03ffu);
-
-    if (!s_was_active) {
-      /* Bias the origin well away from 0 so early leftward motion cannot
-       * underflow the unsigned world coordinate. */
-      s_world_x[layer] = (uint32_t)h + 2048u;
-      s_world_y[layer] = (uint32_t)v + 1024u;
-    } else {
-      int32_t dx = (int32_t)((uint16_t)(h - s_prev_h[layer]) & 0x03ff);
-      int32_t dy = (int32_t)((uint16_t)(v - s_prev_v[layer]) & 0x03ff);
-      if (dx >= 512) dx -= 1024;
-      if (dy >= 512) dy -= 1024;
-      s_world_x[layer] = (uint32_t)((int32_t)s_world_x[layer] + dx);
-      s_world_y[layer] = (uint32_t)((int32_t)s_world_y[layer] + dy);
-    }
-    s_prev_h[layer] = h;
-    s_prev_v[layer] = v;
-
-    WsShadowSetWorld(layer, s_world_x[layer], s_world_y[layer]);
-    WsShadowSetScroll(layer, h, v);
-    WsShadowSetBlankTile(layer, -1);
-    WsShadowSetRetainHistory(layer, true);
-    /* Symmetric retention. X2 is walked in BOTH directions, so whichever side
-     * is trailing must keep history. The engine default prunes all east
-     * history every frame, which is right for a right-scrolling game but made
-     * the east gutter pixel-identical to no-history when walking left. */
-    WsShadowSetWestKeep(layer, west_keep_tiles);
-    WsShadowSetEastKeep(layer, west_keep_tiles);
-  }
-
-  s_was_active = true;
+  WsShadowReset();
   WsShadowFrame(g_ppu);
-
-  /* After capture: cover whatever history could not (notably the leading
-   * edge) by repeating the nearest real viewport-edge column. */
-  for (int layer = 0; layer < kX2WsLayers; layer++)
-    WsShadowExtendEdges(layer, g_ws_extra);
-
-  /* Opt-in diagnostic: SNESRECOMP_WS_BG_DEBUG=1. Reports whether the renderer
-   * will actually consult the shadow, which is the thing that silently fails. */
-  {
-    static int s_dbg = -1;
-    static unsigned s_n;
-    if (s_dbg < 0) {
-      const char *e = getenv("SNESRECOMP_WS_BG_DEBUG");
-      s_dbg = (e && e[0] == '1') ? 1 : 0;
-    }
-    if (s_dbg && (s_n % 120u) == 0u) {
-      WsShadowMarginStat m0, m1;
-      WsShadowGetMarginStats(0, &m0);
-      WsShadowGetMarginStats(1, &m1);
-      fprintf(stderr,
-              "[x2_wsbg] main=$%02X extra=%d keep=%d act=%d/%d  "
-              "BG1 W %llu/%llu E %llu/%llu | BG2 W %llu/%llu E %llu/%llu "
-              "(hit/miss)\n",
-              (unsigned)main_screen, g_ws_extra, west_keep_tiles,
-              (int)WsShadowLayerActive(0), (int)WsShadowLayerActive(1),
-              (unsigned long long)m0.westHit, (unsigned long long)m0.westMiss,
-              (unsigned long long)m0.eastHit, (unsigned long long)m0.eastMiss,
-              (unsigned long long)m1.westHit, (unsigned long long)m1.westMiss,
-              (unsigned long long)m1.eastHit, (unsigned long long)m1.eastMiss);
-    }
-    s_n++;
-  }
 }
 
 // --- Scripted input ---
