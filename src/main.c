@@ -305,12 +305,19 @@ static void X2Display_PrepareBg2Shadow(void) {
       s_dbg = (e && e[0] == '1') ? 1 : 0;
     }
     if (s_dbg && (s_n % 120u) == 0u) {
+      WsShadowMarginStat m0, m1;
+      WsShadowGetMarginStats(0, &m0);
+      WsShadowGetMarginStats(1, &m1);
       fprintf(stderr,
-              "[x2_wsbg] main=$%02X extra=%d west=%d  bg1{active=%d bgsc=$%02X} "
-              "bg2{active=%d bgsc=$%02X}\n",
+              "[x2_wsbg] main=$%02X extra=%d keep=%d act=%d/%d  "
+              "BG1 W %llu/%llu E %llu/%llu | BG2 W %llu/%llu E %llu/%llu "
+              "(hit/miss)\n",
               (unsigned)main_screen, g_ws_extra, west_keep_tiles,
-              (int)WsShadowLayerActive(0), (unsigned)g_ppu->bgXsc[0],
-              (int)WsShadowLayerActive(1), (unsigned)g_ppu->bgXsc[1]);
+              (int)WsShadowLayerActive(0), (int)WsShadowLayerActive(1),
+              (unsigned long long)m0.westHit, (unsigned long long)m0.westMiss,
+              (unsigned long long)m0.eastHit, (unsigned long long)m0.eastMiss,
+              (unsigned long long)m1.westHit, (unsigned long long)m1.westMiss,
+              (unsigned long long)m1.eastHit, (unsigned long long)m1.eastMiss);
     }
     s_n++;
   }
