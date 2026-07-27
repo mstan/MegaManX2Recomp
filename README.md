@@ -26,9 +26,8 @@ and the launcher, so headered dumps verify against the same digest.
 surface: the opening story scenes render with correct BG layers, sprites,
 palettes and text, and advance between scenes.
 
-Not yet done: no gameplay validation, no oracle comparison, no audio
-verification, no widescreen. Static AOT coverage is a one-directive seed, so
-essentially all execution is on the interpreter tier — correct, but slow.
+Still open: broad gameplay/oracle coverage, audio verification, and the
+stage-specific widescreen defects recorded in `docs/OAM_SURVEY.md`.
 
 This project was stood up from the MegamanXRecomp host layer; every Mega Man
 X 1 specific finding (the fiber task scheduler, the BG2 widescreen shadow, the
@@ -43,8 +42,10 @@ What that means concretely:
   on as an optimization; anything not covered runs the real ROM bytes.
 * **`recomp/bank00.cfg` is a one-directive seed** (`auto_vectors` +
   `tier_down_stubs`). Static coverage grows from there.
-* **Widescreen is not surveyed** — the launcher toggle is hidden. The
-  widescreen code path is present and wired but inert.
+* **Widescreen is a built-in Mod.** Its HUD anchoring, exact background-margin
+  fill, weather handling, and object-window widening are implemented, while
+  known residual stage-specific defects remain documented. The feature is
+  disabled by default and activated from **Mods**, not generic Settings.
 * **The interrupt handlers live in WRAM.** The ROM's native NMI/IRQ vectors
   point at `$00:1FEF` / `$00:1FF3` (the low WRAM mirror), where boot installs
   `JML` trampolines into a driver block copied out of ROM bank `$08`. That is
@@ -101,3 +102,7 @@ cmake --build build
 
 `-DSNESRECOMP_ENABLE_TRACE=ON` builds the TCP debug server and the always-on
 observability rings — the bring-up configuration. Omit it for a release build.
+
+This title opts into snesrecomp's package loader. The build preloads a
+default-disabled Mega Man X2 Widescreen feature under `mods/packages`; users
+may also install data-only `.snesmod` archives from the launcher's Mods page.

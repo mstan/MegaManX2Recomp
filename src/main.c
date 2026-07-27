@@ -27,6 +27,9 @@
 #include "x2_display.h"
 #include "util.h"
 #include "x2_spc_player.h"
+#if SNESRECOMP_ENABLE_MODS
+#include "mod_runtime.h"
+#endif
 #if defined(SNES_LAUNCHER) || defined(RECOMP_LAUNCHER)
 #if defined(RECOMP_LAUNCHER)
 /* Shared recomp-ui launcher (F:\Projects\recomp-ui) — the console-agnostic
@@ -866,6 +869,7 @@ int main(int argc, char** argv) {
    * The launcher auto-strips a 512-byte SMC copier header before hashing,
    * so headered and unheadered dumps both verify against the same hash. */
   static char rom_path_buf[512];
+  int mods_ready = 0;
   {
     /* 1.5 MiB LoROM, Rev 1 (v1.1). SHA-256 over the unheadered payload (the
      * launcher strips a 512-byte SMC copier header before hashing).
@@ -878,6 +882,15 @@ int main(int argc, char** argv) {
       0x4c,0x78,0x53,0xb2,0x9b,0x3b,0xe4,0x0d,
       0xf6,0xfc,0x7f,0x27,0x93,0xa8,0x87,0xed,
     };
+#if SNESRECOMP_ENABLE_MODS
+    mods_ready = snes_mod_runtime_initialize_c(
+        "mods", "megaman-x2-us",
+        "f3246755f608a1e1dc9c848b61da3b824c7853b29b3be40df6fc7f2793a887ed");
+    if (!mods_ready) {
+      fprintf(stderr, "SNES mods unavailable: %s\n",
+              snes_mod_runtime_last_error_c());
+    }
+#endif
     int rom_resolved_by_launcher = 0;
 
 #if defined(SNES_LAUNCHER) || defined(RECOMP_LAUNCHER)
@@ -971,14 +984,15 @@ int main(int argc, char** argv) {
         gi.has_expected_crc = 1;
         gi.known_sha256 = &kX2RomSha256;   /* single accepted digest */
         gi.num_known_sha256 = 1;
-        /* Widescreen is NOT surveyed for this title yet: nothing has
-         * proven margin spawn/cull or the BG streamer, so 16:9 would
-         * show empty margins with pop-in. The code path stays; the
-         * launcher toggle stays hidden until a survey promotes it. */
+        /* Widescreen is a game-owned, default-disabled Mods feature. Keep the
+         * generic Settings toggle hidden so there is one authoritative state. */
         gi.widescreen_supported = 0;
         gi.num_players = 1;            /* MMX is 1-player — hide the Player 2 row */
         gi.msu1_supported = 0;         /* hide MSU-1 panel */
         gi.config_path = config_file;  /* hotkey editor targets the live config */
+#if SNESRECOMP_ENABLE_MODS
+        gi.mods = mods_ready ? snes_mod_runtime_launcher_provider_c() : NULL;
+#endif
 
 #if defined(RECOMP_LAUNCHER)
         /* cwd is anchored to the exe dir (snesrecomp_anchor_to_exe_dir above),
@@ -1047,6 +1061,16 @@ int main(int argc, char** argv) {
       if (rc) { fprintf(rc, "%s\n", rom_path_buf); fclose(rc); }
     }
   }
+#if SNESRECOMP_ENABLE_MODS
+  if (mods_ready) {
+    if (!snes_mod_runtime_commit_c(rom_path_buf)) {
+      fprintf(stderr, "SNES mod plan rejected: %s\n",
+              snes_mod_runtime_last_error_c());
+      return 1;
+    }
+    snes_mod_runtime_activate_plugins_c();
+  }
+#endif
 
   static char *resolved_argv[2];
   resolved_argv[0] = rom_path_buf;
@@ -1695,7 +1719,11 @@ static void HandleCommand(uint32 j, bool pressed) {
       g_new_ppu = (g_ppu_render_flags & kPpuRenderFlags_NewRenderer) != 0;
       break;
     case kKeys_ToggleWidescreen:
+#if SNESRECOMP_ENABLE_MODS
+      printf("Widescreen is controlled from Mods; restart after changing it.\n");
+#else
       X2Display_SetWidescreenEnabled(!g_config.widescreen);
+#endif
       break;
     case kKeys_VolumeUp:
     case kKeys_VolumeDown: HandleVolumeAdjustment(j == kKeys_VolumeUp ? 1 : -1); break;

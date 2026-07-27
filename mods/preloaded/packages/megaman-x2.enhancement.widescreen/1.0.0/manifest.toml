@@ -1,0 +1,24 @@
+format_version = 1
+id = "megaman-x2.enhancement.widescreen"
+version = "1.0.0"
+name = "Mega Man X2 Widescreen"
+author = "mstan"
+description = "Renders Mega Man X2 with a wider 16:9 field of view using its game-specific HUD, background-margin, weather, spawn, cull, and draw-window work."
+license = "MIT"
+resolver = "declarative"
+save_compatibility = "shared"
+
+[[target]]
+game_id = "megaman-x2-us"
+rom_sha256 = "f3246755f608a1e1dc9c848b61da3b824c7853b29b3be40df6fc7f2793a887ed"
+
+[[feature]]
+id = "widescreen"
+name = "Widescreen (16:9)"
+description = "Enable Mega Man X2's game-specific 16:9 rendering enhancement. Some stage-specific visual defects remain under investigation."
+group = "Display"
+default_enabled = false
+
+[[plugin]]
+feature = "widescreen"
+id = "megaman-x2.widescreen"
