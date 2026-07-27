@@ -453,12 +453,38 @@ match WRAM `$7E:83FF`. That path may still be readable even if the per-column
 streaming is not — but a whole-half buffer only helps at section boundaries, not
 during the continuous scrolling that produces the reported symptom.
 
+## The scenery-upload routine, found statically (2026-07-26)
+
+Owner steer: any approach is acceptable provided it does not cause frame lag or
+crash risk, and a game-specific override is fine for now. That favours the
+"make the game stage earlier" route (P13) over reconstructing the level data.
+
+Found by reading the generated C — no runtime tracing needed, and only possible
+because the AOT profile harvest put these banks in `src/gen`:
+
+    bank_00_CB05   ROM $00:CB05   THE VRAM upload routine.
+                                  Writes $4300 (DMA control), $4302 (source),
+                                  $4305 (size), $2116 (VRAM dest).
+                                  First delegates to $08:E484.
+    bank_00_CF80   ROM $00:CF80   its ONLY caller (verified: exactly one
+                                  call site in all of src/gen).
+
+So every tilemap upload funnels through `$00:CF80 -> $00:CB05`. That is the
+choke point to bias.
+
+Still to find: the compare that decides *when* CF80 runs — i.e. the camera-line
+trigger. It is upstream of CF80; CF80 itself is a call sequence, not the
+decision. Once found, bias it earlier by the margin width, gated on widescreen,
+and keep the lead <= margin or CHR paging garbles (P13).
+
 ## Not yet measured
 
-* Which WRAM addresses hold X2's camera and the staging trigger lines.
+* The camera-line compare upstream of `$00:CF80`, and which WRAM address holds
+  the camera position it tests.
 * Whether `$7E:8400` leads the camera or is filled just-in-time (the
   retained-vs-scratch test never caught a whole-half burst in the walk window).
-* X2's metatile format and expansion routine, if the prefill route is kept.
+* X2's metatile format and expansion routine — only needed if the prefill route
+  is revived.
 
 ## Measured since (answers to earlier open questions)
 
