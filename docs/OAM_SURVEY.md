@@ -681,22 +681,39 @@ counter $6620). The Cx4 transforms that list into OAM entries; its writes
 go through cx4_bus_write and are invisible to the CPU write log. Any future
 P8 work is either Cx4-side or a host post-pass over the display list.
 
-## REMAINING pop-in source: the stream frontier `$09DD` (not yet biased)
+## `$09DD` is NOT a spawn frontier — earlier hypothesis DISPROVEN
 
-`$09DD` = the world X up to which the game has streamed/admitted content.
-Written by the BG1 stream handlers ($00:DE41/$00:DE9E), clamped in $00:E08F
-(target ≈ camera + $100 = the native right edge, creep-limited to 8px/frame;
-`$09E0` is the Y twin at camera + $E0). Read by ~15 sites across banks
-00/01/02/03/04/07/08/29/2A, including per-enemy sleep checks of the shape
-`LDA $09DD / CMP $05` ($07:AB66). Frontier-gated enemy types therefore still
-wake at the native edge even with the windows widened.
+An earlier draft of this section claimed `$09DD` was a "stream frontier"
+gating enemy wake-ups at the native edge. A full ROM census killed it:
+**296 accesses**, including `dp$05 - $09DD` signed-distance computations
+($00:8529) and `LDA #$20 / STA $09DD` initialization ($00:90DF), and the
+measured steady state is camera+128 = mid-screen. `$09DD`/`$09E0` are the
+**player/attention world X/Y** (camera-clamped in $00:E08F). The
+`LDA $09DD / CMP $05` shapes in enemy AI are facing/behavior triggers, not
+spawn gates. Do not bias them — that changes AI behavior, not visibility.
 
-Do NOT naively bias the stored `$09DD`: the BG compose logic ($00:E166)
-reads the same cursor to bound column composition. Options, undecided:
-bias the CONSUMER compares in the shared bank-08 object library (need to
-enumerate which of the 15 sites are sleep checks), or advance the frontier
-target in $00:E08F/DE41/DE9E by the margin and prove the compose logic
-tolerates it (the renderer-side margin fill already covers the visuals).
+Measured after the margin+32 window widening (OAM first-appearance probe,
+slot 5 sweep): the enemy cluster's sprites are already present when their
+world positions scroll into the wide view — **no pop-in observed at the
+16:9 edge** in the surveyed area. Any future pop-in report should be
+answered by finding that enemy's own window-check variant (below), not by
+revisiting `$09DD`.
+
+## Inlined window-check copies: swept generically
+
+Four enemy/projectile handlers inline their own copy of the window idiom
+instead of calling the shared helpers: `bank_02_EB99` ($40/$180),
+`bank_03_C66E` ($20/$140), `bank_07_D695` ($40/$180), `bank_07_DEA0`
+($40/$180). tools/apply_overrides.py finds ALL of them structurally: after
+a `$1E5D` (camera X) read, the next add-constant {$20,$40,$60} AND next
+limit-constant {$140,$180,$1C0} are widened — **only as a confirmed pair**
+(a lone add after an anchor read is some other camera computation; the
+first generic pass wrongly hit four of those — bank_00_DC50, bank_01_CC61,
+bank_08_AC32, bank_29_9FFF — and the pair requirement exists because of
+them). `$1E60` (camera Y) reads disarm the tracker, keeping Y windows
+authentic — necessary because D834's Y pair reuses the $180 constant.
+22 sites total at current AOT coverage; the injector fails loudly if a
+regen changes the emitted shapes.
 
 ## Weather overlays: measured + FIXED (owner rain save, slot 8)
 

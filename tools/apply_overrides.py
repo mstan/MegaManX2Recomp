@@ -41,14 +41,26 @@ import sys
 
 MARKERS = ("/*WS-OBJ-WIN*/",)
 
-RE_FUNC = re.compile(r"^RecompReturn (bank_00_[0-9A-F]{4})_M\dX\d\(CpuState")
+RE_FUNC = re.compile(r"^RecompReturn (bank_[0-9a-f]{2}_[0-9A-F]{4})_M\dX\d"
+                     r"\(CpuState")
+# The camera-anchor reads. $1E5D = world X (the window idiom subtracts it
+# from the object's dp$05); $1E60 = world Y — a Y read DISARMS the tracker
+# because the Y windows reuse the $180 limit constant (D834's Y pair is
+# $50/$180) and must stay authentic (widescreen adds no vertical margin).
+RE_ANCHOR_X = re.compile(
+    r"cpu_read16\(cpu, (?:cpu->DB|0x7e), \(uint16\)\(0x1e5d\)\)", re.I)
+RE_ANCHOR_Y = re.compile(
+    r"cpu_read16\(cpu, (?:cpu->DB|0x7e), \(uint16\)\(0x1e60\)\)", re.I)
+RE_CONST = re.compile(r"^(\s*)uint16 (_v\d+) = (0x[0-9a-f]+);\s*$")
 
-# (function, X-window add constant, X-window limit constant)
-WIN_SITES = {
-    "bank_00_D813": ("0x40", "0x180"),
-    "bank_00_D834": ("0x60", "0x1c0"),
-    "bank_00_D859": ("0x20", "0x140"),
-}
+ADD_CONSTS = {"0x20", "0x40", "0x60"}
+LIMIT_CONSTS = {"0x140", "0x180", "0x1c0"}
+# Emitted-line budgets: in every observed body the add constant lands within
+# a few lines of the anchor read (the ADC follows the SBC immediately) and
+# the limit within the CMP that follows. A generous budget still rejects
+# far-away unrelated constants.
+ADD_BUDGET = 60
+LIMIT_BUDGET = 40
 
 
 def win_snippet(indent, var, kind, const):
@@ -57,38 +69,64 @@ def win_snippet(indent, var, kind, const):
             f"{var} = {fn}({const}); }}\n")
 
 
-def apply_obj_windows(lines, verbose):
-    out = []
+def apply_obj_windows(lines, verbose, fname):
+    """Generic pass, PAIR-CONFIRMED: after a $1E5D (camera X) read, find the
+    next add-constant AND the next limit-constant of the window idiom; only
+    a complete pair is injected. A lone add after an anchor read is some
+    other camera computation and must stay untouched. $1E60 reads or budget
+    exhaustion disarm the tracker."""
+    # Phase 1: detect confirmed pairs -> line index -> (var, kind, const)
+    inject = {}
     cur_fn = None
-    pending = None  # (add_const, limit_const) still to patch in this body
-    n = 0
-    for line in lines:
+    state = None  # None | ("add", ttl) | ("limit", ttl, add_idx, add_m)
+    n_pairs = 0
+    for idx, line in enumerate(lines):
         m = RE_FUNC.match(line)
         if m:
             cur_fn = m.group(1)
-            pending = list(WIN_SITES.get(cur_fn, ())) or None
+            state = None
         elif line.startswith("RecompReturn "):
             cur_fn = None
-            pending = None
+            state = None
+        if cur_fn is None:
+            continue
+        if RE_ANCHOR_X.search(line):
+            state = ("add", ADD_BUDGET)
+            continue
+        if RE_ANCHOR_Y.search(line):
+            state = None
+            continue
+        if state is None:
+            continue
+        ttl = state[1] - 1
+        if ttl <= 0:
+            state = None
+            continue
+        state = (state[0], ttl) + state[2:]
+        m = RE_CONST.match(line)
+        if not m:
+            continue
+        indent, var, const = m.groups()
+        if state[0] == "add" and const in ADD_CONSTS:
+            state = ("limit", LIMIT_BUDGET, idx, (indent, var, const))
+        elif state[0] == "limit" and const in LIMIT_CONSTS:
+            add_idx, add_m = state[2], state[3]
+            inject[add_idx] = (add_m[0], add_m[1], "add", add_m[2], cur_fn)
+            inject[idx] = (indent, var, "limit", const, cur_fn)
+            n_pairs += 1
+            state = None
+
+    # Phase 2: emit with snippets after each confirmed line.
+    out = []
+    n = 0
+    for idx, line in enumerate(lines):
         out.append(line)
-        if not pending or cur_fn not in WIN_SITES:
-            continue
-        add_c, lim_c = WIN_SITES[cur_fn]
-        m = re.match(rf"^(\s*)uint16 (_v\d+) = {add_c};\s*$", line)
-        if m and add_c in pending:
-            out.append(win_snippet(m.group(1), m.group(2), "add", add_c))
-            pending.remove(add_c)
+        if idx in inject:
+            indent, var, kind, const, fn = inject[idx]
+            out.append(win_snippet(indent, var, kind, const))
             n += 1
             if verbose:
-                print(f"  WS-OBJ-WIN add {add_c} in {cur_fn}")
-            continue
-        m = re.match(rf"^(\s*)uint16 (_v\d+) = {lim_c};\s*$", line)
-        if m and lim_c in pending:
-            out.append(win_snippet(m.group(1), m.group(2), "limit", lim_c))
-            pending.remove(lim_c)
-            n += 1
-            if verbose:
-                print(f"  WS-OBJ-WIN limit {lim_c} in {cur_fn}")
+                print(f"  WS-OBJ-WIN {kind} {const} in {fn} ({fname})")
     return out, n
 
 
@@ -114,7 +152,7 @@ def process_file(path, restore, check, verbose):
             print(f"{os.path.basename(path)}: already injected, skipping")
         return 0
 
-    out, n = apply_obj_windows(lines, verbose)
+    out, n = apply_obj_windows(lines, verbose, os.path.basename(path))
     if n and not check:
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.writelines(out)
@@ -132,7 +170,7 @@ def main():
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
 
-    files = sorted(glob.glob(os.path.join(args.gen_dir, "bank00_*.c")))
+    files = sorted(glob.glob(os.path.join(args.gen_dir, "bank*_v2.c")))
     if not files:
         print(f"apply_overrides: no gen files under {args.gen_dir}",
               file=sys.stderr)
@@ -144,9 +182,10 @@ def main():
 
     verb = "stripped" if args.restore else "injected"
     print(f"apply_overrides: {verb} {total} site(s)")
-    # 3 functions x 2 constants x N M/X variants; require at least the three
-    # canonical M1X1 bodies (6 sites) unless restoring or already applied.
-    if not args.restore and total not in (0,) and total < 6:
+    # Known idiom population: the 3 shared helpers (7 M/X bodies) + 4 inlined
+    # copies = 11 pairs = 22 sites at the 2026-07-26 coverage. Require at
+    # least the shared helpers (14 sites) unless restoring or already applied.
+    if not args.restore and total not in (0,) and total < 14:
         print("apply_overrides: FEWER SITES THAN EXPECTED -- emitted shapes "
               "may have changed; verify before building.", file=sys.stderr)
         return 1

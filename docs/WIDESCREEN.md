@@ -24,13 +24,20 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   clamp. A/B-measured: 478 vs 198 bright rain pixels in the east gutter,
   native identical. Kill-switch `SNESRECOMP_WS_BG3=0`.
 
+* **Inlined window copies swept** — apply_overrides.py now finds every
+  camera-window idiom structurally (pair-confirmed $1E5D + add + limit),
+  covering the four per-enemy inlined variants in banks 02/03/07 alongside
+  the shared helpers (22 sites). The earlier "$09DD frontier" hypothesis is
+  DISPROVEN ($09DD = player/attention X — see OAM_SURVEY.md); the
+  first-appearance probe shows no pop-in at the 16:9 edge in the surveyed
+  area.
+
 Still open before the toggle ships:
-* **the `$09DD` stream-frontier gate** — frontier-gated enemy types still
-  wake at the native edge (see OAM_SURVEY.md "REMAINING pop-in source");
 * heat-shimmer visual confirmation in play (same mechanism as rain, so the
   BG3 gate should cover it — unverified);
-* a projectile/cull sweep (inlined window copies in banks 02/07) once the
-  above land.
+* owner playtest across stages: any residual enemy pop-in now means that
+  enemy's own exotic window variant — find it by type, not by revisiting
+  $09DD.
 
 The shipped default is native 256x224. `Widescreen` and `NoSpriteLimits` are both
 **0** in the embedded default inside `src/main.c` (that string, not the repo-root
