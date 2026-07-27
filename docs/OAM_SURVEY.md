@@ -647,17 +647,41 @@ Also fixed here: the fill's row range now covers the full wrapped-Y fold
 rows far from the frame vScroll and racked up millions of margin misses
 against the old 30-row fill (found via `ws_shadow_stats`).
 
-## Rocket platforms (rain stage): spawn pop-in — OPEN, lead recorded
+## Camera-TRIGGER family: the remaining spawn pop-ins (frog, pickup, rockets)
 
-The flying platform type at `$07:DC5A` (trampoline `$00:FD36`): its CULL
-routes through `$07:DEA0`, which the window sweep already widened (matches
-the owner's "they cull in 16:9"). Its SPAWN position source is NOT the
-swept idiom — slot inits come via `bank_07_DCD6`/`DD4B` (and a
-`bank_03_EBD7` path), and the `#$100` in DCD6 is a dp$1C timer compare,
-not a camera offset. Next step needs a survivable repro (the probe X dies
-in the spike pit): either a save state standing before the pit with full
-health, or owner riding one while `SNESRECOMP_WLOG_ADDR=1818:1D17` runs —
-then trace the +$05 world-X store back to its source.
+Owner-reported pop-ins that survived the window sweep (`spawns at 4:3,
+culls at 16:9`) come from a third idiom the pair-scan could not see: per-
+type wake/attack triggers comparing a camera-relative line against the
+object's OWN world X — a MEMORY compare, not an immediate limit:
+
+    LDA $1E5D / ADC #K / CMP $05      K in $20..$140 (e.g. $08:AC32 K=$40,
+                                       $08:AC58 K=$C0, $07:F346 K=$100)
+
+Dormant objects skip the (already widened) shared draw windows entirely,
+so they pop exactly when this line reaches them — tuned to the native
+view. apply_overrides.py pass 3 widens the add through X2WsObjWinAdd,
+pair-confirmed by the dp$05 compare (8 sites, banks 04/07/08/29/2A; the
+inject total is now 30). Same WS-SPAWN kill-switch and margin+32 budget.
+(Bug found on the way: the injector's function regex was missing case-
+insensitivity and skipped `bank_2A_*` bodies.)
+
+The rocket platform's own chain for reference: type `$07:DC5A` (trampoline
+`$00:FD36`), cull via the swept `$07:DEA0`, slot inits via
+`bank_07_DCD6`/`DD4B`. The scripted probe cannot survive the spike pit to
+ride one, so the trigger-family fix is verified by construction + owner
+playtest, not by a scripted A/B.
+
+## Rain corner gaps: RESOLVED with the line-repeat policy
+
+The corner gaps were NOT missing coverage: the rain texture itself is
+patchy, and the 32-wide BG3 map WRAP could seat a sparse patch in a gutter
+against dense native columns — a screen-anchored hole. The weather overlay
+now uses `PpuSetWidescreenLayerRepeat(ppu, 0x04)` (cyclic repeat of the
+authentic native line) instead of the widen+wrap: gutter rain density is
+identical to adjacent native rain by construction. Measured by two-frame
+motion diff at fixed camera: per-cell motion counts uniform across all 7
+column bands including both gutters (previously 116-249 spread in the top
+rows, now 222-256). Same `SNESRECOMP_WS_BG3=0` kill-switch.
 
 Note: the "slot 4 = stage-select menu" line in the periodicity table above
 is stale — the owner's save slots have changed; slot 4 is now Wire Sponge

@@ -41,7 +41,7 @@ import sys
 
 MARKERS = ("/*WS-OBJ-WIN*/",)
 
-RE_FUNC = re.compile(r"^RecompReturn (bank_[0-9a-f]{2}_[0-9A-F]{4})_M\dX\d"
+RE_FUNC = re.compile(r"^RecompReturn (bank_[0-9A-Fa-f]{2}_[0-9A-F]{4})_M\dX\d"
                      r"\(CpuState")
 # The camera-anchor reads. $1E5D = world X (the window idiom subtracts it
 # from the object's dp$05); $1E60 = world Y — a Y read DISARMS the tracker
@@ -55,6 +55,14 @@ RE_CONST = re.compile(r"^(\s*)uint16 (_v\d+) = (0x[0-9a-f]+);\s*$")
 
 ADD_CONSTS = {"0x20", "0x40", "0x60"}
 LIMIT_CONSTS = {"0x140", "0x180", "0x1c0"}
+# Camera-relative TRIGGER idiom: $1E5D read -> add-const -> CMP against the
+# object's own dp$05 world X (a memory compare, invisible to the window
+# pass above). Per-type wake/attack lines tuned to the native view; the
+# owner-reported frog/pickup/rocket pop-ins are this family.
+TRIG_ADDS = {"0x20", "0x40", "0x60", "0x80", "0xa0", "0xc0", "0x100",
+             "0x110", "0x120", "0x140"}
+RE_DP5 = re.compile(
+    r"cpu_read16\(cpu, 0x00, \(uint16\)\(cpu->D \+ 0x0005\)\)")
 # Emitted-line budgets: in every observed body the add constant lands within
 # a few lines of the anchor read (the ADC follows the SBC immediately) and
 # the limit within the CMP that follows. A generous budget still rejects
@@ -114,6 +122,46 @@ def apply_obj_windows(lines, verbose, fname):
             inject[add_idx] = (add_m[0], add_m[1], "add", add_m[2], cur_fn)
             inject[idx] = (indent, var, "limit", const, cur_fn)
             n_pairs += 1
+            state = None
+
+    # Detect camera-trigger sites: anchor -> add-const -> CMP dp$05.
+    # Confirmed only by the dp$05 compare; the add is widened like a
+    # window edge (fires when the WIDE view approaches, not the native).
+    cur_fn = None
+    state = None  # None | ("armed", ttl) | ("added", idx, m, ttl)
+    for idx, line in enumerate(lines):
+        m = RE_FUNC.match(line)
+        if m:
+            cur_fn = m.group(1)
+            state = None
+        elif line.startswith("RecompReturn "):
+            cur_fn = None
+            state = None
+        if cur_fn is None:
+            continue
+        if RE_ANCHOR_X.search(line):
+            state = ("armed", 40)
+            continue
+        if RE_ANCHOR_Y.search(line):
+            state = None
+            continue
+        if state is None:
+            continue
+        ttl = state[-1] - 1
+        if ttl <= 0:
+            state = None
+            continue
+        state = state[:-1] + (ttl,)
+        mc = RE_CONST.match(line)
+        if mc and state[0] == "armed" and mc.group(3) in TRIG_ADDS \
+                and idx not in inject:
+            state = ("added", idx, mc.groups(), 30)
+            continue
+        if state[0] == "added" and RE_DP5.search(line):
+            add_idx, (indent, var, const) = state[1], state[2]
+            if add_idx not in inject:
+                inject[add_idx] = (indent, var, "add", const,
+                                   cur_fn + " [trigger]")
             state = None
 
     # Phase 2: emit with snippets after each confirmed line.

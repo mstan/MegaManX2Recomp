@@ -170,10 +170,13 @@ static void X2Display_PreparePpuFrame(void) {
    * columns. Wire Sponge's weather overlays (rain, heat shimmer) are the
    * exception: gameplay puts BG3 ALONE on the SUBSCREEN (TS=$04, TM lacks
    * BG3) and blends it via color math — measured from the owner's rain
-   * save (BG3SC=$0C, 32x32, drifting scroll). Widen BG3 for exactly that
-   * signature so the weather fills 16:9; the 32-wide map wraps, which
-   * tiles the repeating rain pattern seamlessly. Menus (BG3 on the main
-   * screen) keep the authentic clamp. */
+   * save (BG3SC=$0C, 32x32, drifting scroll). For exactly that signature,
+   * fill the margins by cyclically REPEATING the authentic native line
+   * (PpuSetWidescreenLayerRepeat) rather than map wrap: the rain texture
+   * is patchy, and wrap can seat a sparse patch in a gutter against a
+   * dense native column (owner-reported corner gaps). Repeat keeps gutter
+   * density identical to the adjacent native rain by construction. Menus
+   * (BG3 on the main screen) keep the authentic clamp. */
   {
     static int s_bg3_enabled = -1;
     if (s_bg3_enabled < 0) {
@@ -183,7 +186,7 @@ static void X2Display_PreparePpuFrame(void) {
     bool bg3_sub_overlay = s_bg3_enabled &&
                            g_ppu->screenEnabled[1] == 0x04 &&
                            !(g_ppu->screenEnabled[0] & 0x04);
-    PpuSetWidescreenBg3Widen(g_ppu, bg3_sub_overlay ? 1 : 0);
+    PpuSetWidescreenLayerRepeat(g_ppu, bg3_sub_overlay ? 0x04 : 0x00);
   }
   PpuSetWidescreenLineEnhancer(g_ppu, NULL, NULL);
 }

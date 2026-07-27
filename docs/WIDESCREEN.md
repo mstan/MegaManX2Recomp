@@ -32,12 +32,19 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   first-appearance probe shows no pop-in at the 16:9 edge in the surveyed
   area.
 
+* **Camera-trigger family swept** (pass 3): dormant per-type wake lines
+  (`camera + K` vs the object's own dp$05 — a memory compare) widened at
+  8 sites; this is the frog/pickup/rocket "spawns at 4:3" class. Weather
+  margins now use the line-REPEAT policy instead of map wrap (uniform
+  gutter rain by construction).
+
 Still open before the toggle ships:
 * heat-shimmer visual confirmation in play (same mechanism as rain, so the
   BG3 gate should cover it — unverified);
-* owner playtest across stages: any residual enemy pop-in now means that
-  enemy's own exotic window variant — find it by type, not by revisiting
-  $09DD.
+* owner playtest across stages: trigger-family pop-in fixes are verified
+  by construction, not gameplay (the scripted probe cannot survive the
+  rocket-platform pit); any residual pop-in means yet another per-type
+  variant — find it by type.
 
 The shipped default is native 256x224. `Widescreen` and `NoSpriteLimits` are both
 **0** in the embedded default inside `src/main.c` (that string, not the repo-root
