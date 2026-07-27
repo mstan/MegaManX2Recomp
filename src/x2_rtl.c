@@ -21,11 +21,13 @@
 #include "common_cpu_infra.h"
 #include "cpu_state.h"
 #include "cpu_trace.h"
+#include "snes/cart.h"
 #include "snes/interp_bridge.h"
 #include "snes/snes.h"
 #include "snes/dma.h"
 #include "snes/ppu.h"
 #include "snes/saveload.h"
+#include "snes/ws_shadow.h"
 #include "types.h"
 #include "widescreen.h"
 
@@ -252,6 +254,218 @@ void X2ConfigureWsHud(void) {
                            kX2HudLeftEnd, kX2HudRightStart);
   PpuSetWsHudOamShiftRange(g_ppu, kX2HudSlotFirst,
                            kX2HudSlotCount);
+}
+
+/* ── 16:9 BG margins: exact fill from the game's own level structures ─────
+ *
+ * Mega Man X2 streams both BG tilemaps a metatile column at a time, so the
+ * 64x32 map only holds ~256px of fresh content around the camera and a
+ * widescreen gutter reads whatever the other map half last held — a stale
+ * section (docs/OAM_SURVEY.md, "Background layer survey"). History cannot
+ * cover the LEADING gutter (those columns were never displayed), and
+ * edge-repeat smears were owner-rejected. So instead: recompute the exact
+ * tilemap entry for any world position the same way the game's own column
+ * composer does. Decoded from ROM $00:B449 (composer) + $00:B78E (address/
+ * layout derivation), verified 100.000% against live frame VRAM on both
+ * layers before this was written:
+ *
+ *   screen id = layout[((wy>>8)&$1F)*32 + ((wx>>8)&$1F)]     1B/256px screen
+ *   block id  = screenDefs[sid*512 + ((wy>>4)&$F)*$20 + ((wx>>4)&$F)*2]
+ *   entry     = metatileTable[block*8 + ((wy>>3)&1)*4 + ((wx>>3)&1)*2]
+ *               (ROM, 4 words TL,TR,BL,BR; 16-bit address wrap, bank fixed)
+ *
+ * Per-layer sources (the game loads these into its shared $1FDE-$1FEF
+ * compose cluster via $00:B7CC / $00:B803):
+ *
+ *          layout     screenDefs   metatile ptr    world anchor
+ *   BG1    $7E:E800   $7E:2800     24-bit [$09C5]  $1E5D / $1E60
+ *   BG2    $7E:EC00   $7E:A600     24-bit [$09C8]  $1E9D / $1EA0
+ *
+ * Everything is read from WRAM + ROM at frame-prep time: presentation only,
+ * zero simulation impact, and the native 256px region is structurally
+ * untouched (WsShadowTile early-returns for screen X 0..255).
+ *
+ * Self-validating gate: each frame the resolver must reproduce a spread of
+ * tiles from the live NATIVE view before it may paint gutters. Menus,
+ * cutscenes, mode changes and mid-staging frames all fail the comparison
+ * and fall back to the authentic map wrap for that frame — no WRAM
+ * game-state byte to trust, fails safe by construction.
+ */
+typedef struct X2BgStream {
+  uint16_t layoutBase;  /* screen-id layout window, bank $7E        */
+  uint16_t screenDefs;  /* 16x16 block-id maps, 512B/screen, bank $7E */
+  uint16_t mtPtrAddr;   /* WRAM address of 24-bit metatile table ptr */
+  uint16_t worldXAddr;  /* stream-struct world anchor (16-bit)       */
+  uint16_t worldYAddr;
+  uint8_t bgsc;         /* expected BGnSC value: map base + 64x32    */
+  uint16_t mapBaseWord; /* VRAM word base, for native self-validation */
+} X2BgStream;
+
+static const X2BgStream kX2BgStreams[2] = {
+    {0xE800, 0x2800, 0x09C5, 0x1E5D, 0x1E60, 0x51, 0x5000}, /* BG1 */
+    {0xEC00, 0xA600, 0x09C8, 0x1E9D, 0x1EA0, 0x59, 0x5800}, /* BG2 */
+};
+
+static uint16_t x2_wram16(uint32_t addr) {
+  return (uint16_t)(g_ram[addr] | (g_ram[addr + 1] << 8));
+}
+
+/* Exact tilemap entry for world pixel (px, py), via the game's own walk. */
+static uint16_t x2_bg_world_tile(const X2BgStream *s, uint32_t px,
+                                 uint32_t py) {
+  uint32_t li = (((py >> 8) & 0x1F) << 5) | ((px >> 8) & 0x1F);
+  uint8_t sid = g_ram[s->layoutBase + li];
+  uint16_t ba = (uint16_t)(s->screenDefs + sid * 512u +
+                           ((py >> 4) & 0xF) * 0x20u + ((px >> 4) & 0xF) * 2u);
+  uint16_t block = (uint16_t)(g_ram[ba] | (g_ram[(uint16_t)(ba + 1)] << 8));
+  uint16_t mt_addr = x2_wram16(s->mtPtrAddr);
+  uint8_t mt_bank = g_ram[s->mtPtrAddr + 2];
+  /* 16-bit wrap with a fixed bank replicates the guest's LDA [$1C] walk
+   * ($00:B4EE), whose pointer arithmetic never carries into the bank. */
+  uint16_t a = (uint16_t)(mt_addr + block * 8u + (((py >> 3) & 1u) << 2) +
+                          (((px >> 3) & 1u) << 1));
+  return (uint16_t)(cart_read(g_snes->cart, mt_bank, a) |
+                    (cart_read(g_snes->cart, mt_bank, (uint16_t)(a + 1))
+                     << 8));
+}
+
+/* VRAM word address the 64x32 map stores world pixel (px, py) at. */
+static uint16_t x2_bg_vram_word(const X2BgStream *s, uint32_t px,
+                                uint32_t py) {
+  uint32_t tx = px >> 3, ty = py >> 3;
+  return (uint16_t)(s->mapBaseWord + ((tx >> 5) & 1u) * 0x400u +
+                    (ty & 0x1F) * 0x20u + (tx & 0x1F));
+}
+
+/* The resolver must reproduce the live native view to earn the gutters. */
+static bool x2_bg_stream_valid(const X2BgStream *s, int32_t wx, int32_t wy) {
+  if (wx < 0 || wy < 0)
+    return false;
+  int miss = 0;
+  for (int i = 0; i < 12; i++) {
+    uint32_t px = (uint32_t)wx + 10u + (uint32_t)i * 20u;        /* 10..230 */
+    uint32_t py = (uint32_t)wy + 12u + (uint32_t)(i % 6) * 36u;  /* 12..192 */
+    uint16_t want = x2_bg_world_tile(s, px, py);
+    uint16_t got = g_ppu->vram[x2_bg_vram_word(s, px, py) & 0x7FFF];
+    if (want != got)
+      miss++;
+  }
+  /* One mismatch tolerated: a single in-flight column upload must not
+   * flicker the margins off for a frame. Two or more = not our scene. */
+  return miss <= 1;
+}
+
+/* Call once per frame from the host's frame-prep, after g_ws_extra is
+ * known and before the PPU frame is drawn. */
+void X2ConfigureWsBgMargins(void) {
+  static int s_enabled = -1, s_debug = -1;
+  if (s_enabled < 0) {
+    const char *e = getenv("SNESRECOMP_WS_BG_MARGINS");
+    s_enabled = (e && e[0] == '0') ? 0 : 1;
+    e = getenv("SNESRECOMP_WS_BG_MARGINS_DEBUG");
+    s_debug = (e && e[0] && e[0] != '0') ? 1 : 0;
+  }
+  static bool s_was_active;
+
+  /* bgmode is the raw $2105 byte: mode in bits 0-2 (X2 gameplay sets $09 =
+   * mode 1 + BG3-priority). Bits 4-5 must be clear too: 16x16 BG1/BG2 tiles
+   * would change the shadow's key units without failing self-validation
+   * (the walk compares map entries, which stay correct either way). */
+  bool scene_ok = s_enabled && g_ws_active && g_ppu &&
+                  (g_ppu->bgmode & 0x37) == 1 &&
+                  g_ppu->bgXsc[0] == kX2BgStreams[0].bgsc &&
+                  g_ppu->bgXsc[1] == kX2BgStreams[1].bgsc;
+
+  if (s_debug) {
+    static unsigned s_calls;
+    if ((s_calls++ % 120) == 0) {
+      fprintf(stderr,
+              "[x2_ws_bg] call=%u en=%d ws=%d ppu=%d bgmode=%u "
+              "bgXsc=%02X/%02X scene_ok=%d extra=%d\n",
+              s_calls, s_enabled, (int)g_ws_active, g_ppu != NULL,
+              g_ppu ? g_ppu->bgmode : 0xFF, g_ppu ? g_ppu->bgXsc[0] : 0xFF,
+              g_ppu ? g_ppu->bgXsc[1] : 0xFF, (int)scene_ok, g_ws_extra);
+    }
+  }
+
+  bool ok[2] = {false, false};
+  int32_t wxp[2] = {0, 0}, wyp[2] = {0, 0};
+  bool any = false;
+  if (scene_ok) {
+    for (int l = 0; l < 2; l++) {
+      const X2BgStream *s = &kX2BgStreams[l];
+      /* World anchor from the game's stream struct, snapped onto the PPU
+       * scroll phase: the scroll registers are the authority for pixel
+       * phase, never a WRAM mirror (docs/WIDESCREEN.md; MMX1's sliced-
+       * pillar bug). The anchor supplies the high bits PPU scroll lacks. */
+      uint16_t h = (uint16_t)(g_ppu->hScroll[l] & 0x3FF);
+      uint16_t v = (uint16_t)(g_ppu->vScroll[l] & 0x3FF);
+      int32_t wx = (int32_t)x2_wram16(s->worldXAddr);
+      int32_t wy = (int32_t)x2_wram16(s->worldYAddr);
+      int32_t dh = (int32_t)((uint16_t)(h - wx) & 0x3FF);
+      int32_t dv = (int32_t)((uint16_t)(v - wy) & 0x3FF);
+      if (dh >= 512) dh -= 1024;
+      if (dv >= 512) dv -= 1024;
+      wx += dh;
+      wy += dv;
+      if (!x2_bg_stream_valid(s, wx, wy)) {
+        if (s_debug) {
+          static unsigned s_fail[2];
+          if ((s_fail[l]++ % 120) == 0)
+            fprintf(stderr,
+                    "[x2_ws_bg] L%d VALIDATION FAIL #%u wx=%d wy=%d "
+                    "h=%u v=%u anchor=(%u,%u)\n",
+                    l, s_fail[l], wx, wy, h, v, x2_wram16(s->worldXAddr),
+                    x2_wram16(s->worldYAddr));
+        }
+        continue;
+      }
+      ok[l] = true;
+      any = true;
+      wxp[l] = wx;
+      wyp[l] = wy;
+      WsShadowSetWorld(l, (uint32_t)wx, (uint32_t)wy);
+      WsShadowSetBlankTile(l, -1); /* miss = authentic map wrap */
+    }
+  }
+
+  if (!any) {
+    if (s_was_active)
+      WsShadowReset();
+    s_was_active = false;
+    WsShadowFrame(g_ppu); /* no registration = shadow deactivated */
+    return;
+  }
+  s_was_active = true;
+  WsShadowFrame(g_ppu);
+
+  /* Force-fill every margin cell with the exact level data, every frame.
+   * ForceTile (not Prefill): the provider is the single source of truth
+   * in the gutters, so a stale history capture or a wrong-chunk VRAM
+   * attribution can never outlive one frame. The native view is captured
+   * by WsShadowFrame above and is never touched here. */
+  int margin = (g_ws_extra + 7) & ~7;
+  for (int l = 0; l < 2; l++) {
+    if (!ok[l])
+      continue;
+    const X2BgStream *s = &kX2BgStreams[l];
+    const int32_t tx_rng[2][2] = {
+        {(wxp[l] - margin) >> 3, (wxp[l] - 1) >> 3},          /* west  */
+        {(wxp[l] + 256) >> 3, (wxp[l] + 255 + margin) >> 3},  /* east  */
+    };
+    const int32_t ty0 = wyp[l] >> 3, ty1 = (wyp[l] + 239) >> 3;
+    for (int r = 0; r < 2; r++) {
+      for (int32_t tx = tx_rng[r][0]; tx <= tx_rng[r][1]; tx++) {
+        if (tx < 0)
+          continue; /* west of world 0: leave the authentic wrap */
+        for (int32_t ty = ty0; ty <= ty1; ty++) {
+          WsShadowForceTile(l, (uint32_t)tx, (uint32_t)ty,
+                            x2_bg_world_tile(s, (uint32_t)tx << 3,
+                                             (uint32_t)ty << 3));
+        }
+      }
+    }
+  }
 }
 
 void X2DrawPpuFrame(void) {

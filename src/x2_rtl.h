@@ -15,6 +15,13 @@ void X2DrawPpuFrame(void);
  * health bar signature is present in OAM. */
 void X2ConfigureWsHud(void);
 
+/* Per-frame 16:9 BG margin fill: recomputes exact tilemap entries for the
+ * widescreen gutters from the game's own layout/screen/metatile structures
+ * (decoded from $00:B449; see x2_rtl.c). Self-validating against the live
+ * native view; falls back to the authentic map wrap when it cannot prove
+ * the scene. Kill-switch: SNESRECOMP_WS_BG_MARGINS=0. */
+void X2ConfigureWsBgMargins(void);
+
 /* LLE host execution cursor (resume PC + CpuState) — not covered by
  * snes_saveload, which snapshots the unused snes->cpu. */
 void X2StateSaveExtra(struct SaveLoadInfo *sli);

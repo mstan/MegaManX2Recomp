@@ -1,6 +1,17 @@
 # 16:9 widescreen — Mega Man X2
 
-## Status: NOT IMPLEMENTED. Ground floor is faithful 4:3.
+## Status: HUD + BG margins DONE; spawn/cull (parts 3-4) still open.
+
+Done, measured, and documented in `docs/OAM_SURVEY.md`:
+* **HUD anchoring** (part 2) — signature-gated, owner-validated.
+* **Background margins on both layers** (part 1) — exact per-frame fill from
+  the game's own layout/screen/metatile structures, decoded from the column
+  composer `$00:B449`. Both gutters show real level data (0.00% mismatch vs
+  the native view in layer-isolated measurement), the leading edge included.
+  Self-validating gate; kill-switch `SNESRECOMP_WS_BG_MARGINS=0`.
+
+Still open before the toggle ships: enemy spawn (part 3) and cull + OAM
+emitter (part 4) — objects still pop at the gutter edges.
 
 The shipped default is native 256x224. `Widescreen` and `NoSpriteLimits` are both
 **0** in the embedded default inside `src/main.c` (that string, not the repo-root

@@ -184,14 +184,12 @@ bool X2Display_IsWidescreenEnabled(void) { return g_config.widescreen; }
 bool X2Display_IsWidescreenActive(void) { return g_ws_active; }
 int X2Display_GetCurrentFrameWidth(void) { return g_snes_width > 0 ? g_snes_width : 256; }
 
-/* Widescreen BG2 history/prefill is a per-game reverse-engineering job
- * (Mega Man X 1's version read its retained level map at $EC00/$A600).
- * Until Mega Man X2's streamer is surveyed, register an empty shadow frame
- * so the renderer-side margin cache stays deactivated rather than
- * serving stale tiles. */
+/* Widescreen BG margins: exact per-frame fill from the game's own
+ * layout/screen/metatile structures, both layers, both gutters.
+ * Decoded from the game's column composer ($00:B449); implementation
+ * and the self-validating gate live in x2_rtl.c. */
 static void X2Display_PrepareBg2Shadow(void) {
-  WsShadowReset();
-  WsShadowFrame(g_ppu);
+  X2ConfigureWsBgMargins();
 }
 
 // --- Scripted input ---

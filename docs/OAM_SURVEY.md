@@ -259,11 +259,11 @@ all. The blocker was stated too broadly.
 |---|---|
 | P5 HUD gate | done -- signature-gated |
 | HUD anchoring | done -- opposite edges, owner-validated |
-| P1-P4 background margins | **NOT DONE** -- margins show adjacent-room tiles |
+| P1-P4 background margins | **done** -- exact fill from the level structures (see below) |
 | P7-P8 cull + OAM emitter | not done |
 | P9-P12 spawn | not done |
-| P13 stage-trigger bias | not done |
-| P16 4:3 regression gate | not established |
+| P13 stage-trigger bias | superseded for margins -- exact fill needs no early staging |
+| P16 4:3 regression gate | native region measured bit-identical margins on/off |
 
 `Widescreen` remains **0** in the shipped default. It was enabled only in the
 exe-adjacent `build-trace/config.ini` for this test.
@@ -539,6 +539,93 @@ and keep the lead <= margin or CHR paging garbles (P13).
   floor bands. They need different margin sources.
 * *Whether BG3 becomes active in other scenes* — **yes.** Slot 4 renders with
   `screenEnabled main = 0x17` (BG1+BG2+BG3+OBJ), not the `0x13` seen elsewhere.
+
+---
+
+# Level format DECODED + BG margins IMPLEMENTED (2026-07-26)
+
+The "no readable retained map" conclusion above was answered by decoding the
+game's own column composer instead of searching for its output. Found by
+running the always-on write-log on the `$7E:F0xx` staging queue
+(`SNESRECOMP_WLOG_ADDR=F000:F1FF` + `SNESRECOMP_WLOG_STATE=1`) during the
+owner's walk-left repro: every staged byte is written by AOT function
+`bank_00_B449` (the constant `IPC=00CF26` on 28k+ writes is the interpreter's
+last PC — the `JSR $DDDC` pump site — proving the stores are AOT-side, where
+the `fn` tag is live).
+
+## The composer, decoded ($00:B449 + $00:B78E)
+
+One call composes one 16px metatile column (two VRAM tile columns) into two
+0x44-byte queue entries at `$7E:F000+X` (4-byte header: flags `$81`, VRAM
+word address masked `& $FC1F`, count `$40`; queue cursor at `$00A6`, +=
+`$88`/call). The data walk, verified 100.000% against live frame VRAM on
+both layers before anything was built on it:
+
+    screen id = layout[((wy>>8)&$1F)*32 + ((wx>>8)&$1F)]   1 byte / 256px screen
+    block id  = screenDefs[sid*512 + ((wy>>4)&$F)*$20 + ((wx>>4)&$F)*2]
+    map entry = metatileTable[block*8 + ((wy>>3)&1)*4 + ((wx>>3)&1)*2]
+                ROM, 4 words TL,TR,BL,BR; 16-bit pointer wrap, bank fixed
+
+World -> VRAM is straight parity ($00:B78E): map half = world-X bit 8, row =
+world-Y tile mod 32. No rolling anchor.
+
+## Per-layer sources
+
+Two 0x40-byte stream contexts drive the pump: BG1 at D=`$1E58` (via
+`$00:DDDC`), BG2 at D=`$1E98` (via `$00:DEDC`; `$00:D228` derives its camera
+from BG1's — the half-rate parallax link). Before each compose the caller
+loads a shared cluster `$1FDE-$1FEF` from per-layer initializers
+`$00:B7CC` / `$00:B803`:
+
+           layout     screenDefs   metatile ptr     world anchor
+    BG1    $7E:E800   $7E:2800     24-bit [$09C5]   $1E5D / $1E60
+    BG2    $7E:EC00   $7E:A600     24-bit [$09C8]   $1E9D / $1EA0
+
+`$00:B83A` fills `$09C5`/`$09C8` per stage from ROM tables at `$00:89D5` /
+`$00:8AB3` (+stage*3). The layout windows hold 32x32 screen ids.
+
+## The margin fill (src/x2_rtl.c X2ConfigureWsBgMargins)
+
+Per frame, for each layer: snap the stream anchor onto the PPU scroll phase
+(scroll registers are the pixel-phase authority), then `WsShadowForceTile`
+every gutter cell with the walk's exact entry — both sides, 31 rows, ~7
+columns per side. History cannot cover the leading gutter and edge-repeat
+was owner-rejected; the exact walk covers everything, every frame, and a
+stale capture can never outlive one frame.
+
+Gate, fail-safe by construction: raw `$2105 & $37 == 1` (mode 1, 8x8 BG1/BG2
+tiles — the raw byte is `$09`, bit 3 is BG3 priority) + `BG1SC == $51` +
+`BG2SC == $59`, then **self-validation**: the walk must reproduce 11/12
+sampled tiles of the live native view or the layer stands down to authentic
+map wrap for that frame. Menus, cutscenes and mid-staging frames all fail
+the sample. Kill-switch: `SNESRECOMP_WS_BG_MARGINS=0`; gate diagnostics:
+`SNESRECOMP_WS_BG_MARGINS_DEBUG=1` (stderr).
+
+## Measured (2026-07-26, walk repro on slot 5 + all owner states)
+
+* Native 256px region: **bit-identical** margins on vs off (0 / 57,344
+  sampled pixels).
+* West gutter vs the native view that later reveals the same world columns:
+  **0.00% mismatch**, BG1-only and BG2-only isolation
+  (`SNESRECOMP_LAYER_MASK=1`/`2`).
+* East gutter likewise **0.00%** (slot 0; comparisons in Wire Sponge's
+  stage confound on its weather palette cycling — compare shape, or use
+  another stage).
+* `ws_shadow_stats` (new debug-server command, always-on counters): both
+  layers active with **zero margin misses** across attract + all five save
+  states; slots 0-2 prove the high world bits (worldX 5888/6144 ≫ the
+  10-bit PPU scroll).
+* 4:3 (`Widescreen = 0`): shadow inactive, zero counters, 256x224.
+
+Caveats: (1) west of world 0 the fill leaves authentic wrap (no authored
+content exists); (2) margins can show adjacent-layout rooms beyond camera
+clamps — real level data, "wrong-but-plausible", revisit only if the owner
+flags it; (3) `$2105` bit-4/5 scenes (16x16 tiles) deliberately stand down.
+
+Note: the "slot 4 = stage-select menu" line in the periodicity table above
+is stale — the owner's save slots have changed; slot 4 is now Wire Sponge
+gameplay (capsule tower). The margin gate self-validates per frame, so save
+contents cannot mislead it.
 
 ### BG3 surveyed (2026-07-26)
 
