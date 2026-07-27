@@ -647,6 +647,34 @@ Also fixed here: the fill's row range now covers the full wrapped-Y fold
 rows far from the frame vScroll and racked up millions of margin misses
 against the old 30-row fill (found via `ws_shadow_stats`).
 
+## OPEN: the frog-class pop-in survives the trigger sweep — state of play
+
+Owner-verified: the trigger sweep did NOT fix the visible pop-in ("4:3
+spawning everywhere"; deterministic repro = owner save slot 3, Wire Sponge
+stage start, hold right — the frog appears at logical ~300 instead of
+entering pre-drawn). Investigation state, so nobody re-derives it:
+
+* The frog is an OBJ sprite (LAYER_MASK=16 shows it), NOT BG-drawn.
+* It is NOT in the $1818 enemy array (no writes there during the visible
+  transition), NOT in $10D8-$1317 (array silent in gameplay), and the
+  mid-screen births logged in $1818 during walks are ambient effects
+  (bank_01_EB0D copies $09DD player X into its own dp$05 — a follower).
+* **Found via the $6220 display-list writer's X register** (the state dump
+  in `SNESRECOMP_WLOG_ADDR=6220:63FF` lines): sprite emitters run with
+  slot bases **$0D18 and $1358/$1398/$13D8** — object arrays that were
+  never enumerated. $1318+ stride $40 = a second large-actor bank, most
+  likely pumped by the `$00:D0C2` loop ($1F25-selected alternate of D0A0,
+  see $00:CEB0-CEC7). THE FROG LIVES THERE.
+* Next step: WLOG `1318:1817` (and `0D18:10D7`) during the slot-3 repro,
+  find the frog's slot + its wake write between the invisible frame
+  (logical 312) and visible frame (logical ~300), and widen ITS gate.
+  The wake check may be the same shared D813/D834/D859 helpers reached
+  through the D0C2 pump — in which case check the M/X variant actually
+  taken (a call in a mode with no AOT variant falls to the interpreter
+  and executes the ORIGINAL constants; D834 exists only as M1X1).
+  That interp-fallback hole applies to every injected site and may be the
+  real reason widenings "don't take" for whole object classes.
+
 ## Camera-TRIGGER family: the remaining spawn pop-ins (frog, pickup, rockets)
 
 Owner-reported pop-ins that survived the window sweep (`spawns at 4:3,
