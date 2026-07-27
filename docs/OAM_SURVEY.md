@@ -627,6 +627,84 @@ is stale — the owner's save slots have changed; slot 4 is now Wire Sponge
 gameplay (capsule tower). The margin gate self-validates per frame, so save
 contents cannot mislead it.
 
+---
+
+# Object system + spawn/visibility windows (2026-07-26) — P7-P12 phase 1
+
+## The object arrays (measured: snapshot diff + WLOG 1700:1AFF + $00:D008)
+
+Per-frame AI pump at `$00:CF00` runs direct-page object arrays; each loop
+TCDs through slots and dispatches `JSR ($F653,X)` (or table siblings):
+
+    $0B48-$0CC7  stride $20  via $00:D107/D124   (shots/effects)
+    $10D8-$1317  stride $40  via $00:D0A0        (large actors)
+    $1818-$1D17  stride $20  via $00:D008/D02D   (enemies)
+    $1D18-$1E17  stride $10  via $00:D05E/D07F   (small effects)
+
+Enemy struct: +$00 flag, +$05 world X (16-bit), +$08 world Y, +$0E per-frame
+draw flag ($81 = emit metasprite, cleared each frame by the pump), +$11
+state bits. Spawn-init burst example: the bee generator type ($07:A653, an
+AI-driven emitter) allocates via `JSL $00:DA97` and fills a slot in one
+frame (caught with `SNESRECOMP_WLOG_ADDR=1700:1AFF`).
+
+**X2 has no MMX1-style camera-anchored record walk.** Sections pre-populate
+object structs; everything else is gated by shared window checks.
+
+## The three shared window checks — WIDENED (tools/apply_overrides.py)
+
+All keyed to the same `$1E5D`/`$1E60` camera anchor the BG margins use:
+
+    $00:D813  activation  (objX - cam + $40) < $180   cam-64..+320
+    $00:D834  visibility  (objX - cam + $60) < $1C0   sets dp$0E=$81 / 0
+    $00:D859  draw        (objX - cam + $20) < $140   common AI tail
+
+`tools/apply_overrides.py` (new; MMX1's marker-injection discipline, wired
+into tools/regen.sh incl. the strict-idempotent path) reroutes each body's
+X-axis add/limit constants through `X2WsObjWinAdd/Limit` (x2_rtl.c): widened
+by `margin + 32` per side. The +32 slack is required — margin alone moves
+the pop-in to the outermost VISIBLE wide column (owner-observed; the same
+"+32 rule" MMX1 documented). Y windows untouched. Vanilla-identical when
+widescreen is off; kill-switch `SNESRECOMP_WS_SPAWN=0`.
+
+Verified visually: enemies + spawned bees fully rendered and animating in
+the east gutter (slot 5, Wire Sponge). The Cx4 OAM conversion (below) and
+the PPU 9-bit X band handle margin sprites without a separate P8 patch on
+the right side.
+
+## The OAM pipeline is Cx4-authored in gameplay
+
+The intro-scene writer census above does NOT hold in gameplay: the CPU only
+(a) resets/parks HUD slots ($00:D4BB, $00:D5xx HUD bar builders) and
+(b) appends per-object records — world X/Y, flags, metasprite def pointer
+from the `$0D:8000` table — to a display list at `$6220+` ($00:D42A,
+counter $6620). The Cx4 transforms that list into OAM entries; its writes
+go through cx4_bus_write and are invisible to the CPU write log. Any future
+P8 work is either Cx4-side or a host post-pass over the display list.
+
+## REMAINING pop-in source: the stream frontier `$09DD` (not yet biased)
+
+`$09DD` = the world X up to which the game has streamed/admitted content.
+Written by the BG1 stream handlers ($00:DE41/$00:DE9E), clamped in $00:E08F
+(target ≈ camera + $100 = the native right edge, creep-limited to 8px/frame;
+`$09E0` is the Y twin at camera + $E0). Read by ~15 sites across banks
+00/01/02/03/04/07/08/29/2A, including per-enemy sleep checks of the shape
+`LDA $09DD / CMP $05` ($07:AB66). Frontier-gated enemy types therefore still
+wake at the native edge even with the windows widened.
+
+Do NOT naively bias the stored `$09DD`: the BG compose logic ($00:E166)
+reads the same cursor to bound column composition. Options, undecided:
+bias the CONSUMER compares in the shared bank-08 object library (need to
+enumerate which of the 15 sites are sleep checks), or advance the frontier
+target in $00:E08F/DE41/DE9E by the margin and prove the compose logic
+tolerates it (the renderer-side margin fill already covers the visuals).
+
+## Also open (owner-reported, low priority)
+
+Weather HDMA effects (heatwave shimmer, rain) stop at — or garble in — the
+margins. This is the per-line-effect class MMX1 handled with
+`PpuSetWidescreenLineEnhancer`; X2 currently passes NULL. Needs its own
+survey of the weather HDMA tables.
+
 ### BG3 surveyed (2026-07-26)
 
 Slot 4 is the **stage-select menu** (boss portrait grid, "Weather Control Stage

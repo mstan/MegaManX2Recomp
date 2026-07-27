@@ -10,8 +10,19 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   the native view in layer-isolated measurement), the leading edge included.
   Self-validating gate; kill-switch `SNESRECOMP_WS_BG_MARGINS=0`.
 
-Still open before the toggle ships: enemy spawn (part 3) and cull + OAM
-emitter (part 4) — objects still pop at the gutter edges.
+* **Object windows (parts 3-4, phase 1)** — the three shared bank-00
+  activation/visibility/draw window checks are widened by margin+32 via
+  `tools/apply_overrides.py` (marker-injected into src/gen, restorable,
+  wired into regen.sh). Enemies act and render in the gutters
+  (screenshot-verified). Kill-switch `SNESRECOMP_WS_SPAWN=0`.
+
+Still open before the toggle ships:
+* **the `$09DD` stream-frontier gate** — frontier-gated enemy types still
+  wake at the native edge (see OAM_SURVEY.md "REMAINING pop-in source");
+* **weather HDMA effects** (heatwave/rain) stop at or garble in the margins
+  — the PpuSetWidescreenLineEnhancer class, unsurveyed;
+* a projectile/cull sweep (inlined window copies in banks 02/07) once the
+  above land.
 
 The shipped default is native 256x224. `Widescreen` and `NoSpriteLimits` are both
 **0** in the embedded default inside `src/main.c` (that string, not the repo-root

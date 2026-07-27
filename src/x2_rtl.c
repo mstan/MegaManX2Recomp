@@ -468,6 +468,45 @@ void X2ConfigureWsBgMargins(void) {
   }
 }
 
+/* ── 16:9 object windows (spawn/activation/draw) ──────────────────────────
+ *
+ * X2 pre-populates each section's objects as structs ($1818+, world coords
+ * at dp$05/$08) and gates everything through three shared bank-00 window
+ * checks against the camera anchor $1E5D/$1E60:
+ *
+ *   $00:D813  activation  (objX - cam + $40) < $180    cam-64..+320
+ *   $00:D834  visibility  (objX - cam + $60) < $1C0    cam-96..+352
+ *   $00:D859  draw        (objX - cam + $20) < $140    cam-32..+288
+ *
+ * tools/apply_overrides.py reroutes the X-axis add/limit constants of those
+ * three bodies through the helpers below (marker WS-OBJ-WIN), widening each
+ * side by the live margin so objects act and render out to the 16:9 edges
+ * instead of popping at the native ones. Y windows untouched. Vanilla-
+ * identical when widescreen is off; kill-switch SNESRECOMP_WS_SPAWN=0. */
+static int x2_ws_spawn_margin(void) {
+  static int s_enabled = -1;
+  if (s_enabled < 0) {
+    const char *e = getenv("SNESRECOMP_WS_SPAWN");
+    s_enabled = (e && e[0] == '0') ? 0 : 1;
+  }
+  if (!s_enabled || !g_ws_active)
+    return 0;
+  /* Margin alone is not enough: a window widened by exactly the margin
+   * activates objects ON the outermost visible wide column — the pop-in
+   * just moves to the 16:9 edge (owner-observed; WIDESCREEN.md's "+32"
+   * rule). Add slack so activation happens beyond the visible edge; 32px
+   * matches MMX1 and covers most sprite half-widths. */
+  return g_ws_extra + 32;
+}
+
+uint16 X2WsObjWinAdd(uint16 base) {
+  return (uint16)(base + x2_ws_spawn_margin());
+}
+
+uint16 X2WsObjWinLimit(uint16 base) {
+  return (uint16)(base + 2 * x2_ws_spawn_margin());
+}
+
 void X2DrawPpuFrame(void) {
   /* Presentation only. IRQs are serviced inside RunOneFrameOfGame while the
    * bridge advances the beam — never mutate g_cpu here. */
