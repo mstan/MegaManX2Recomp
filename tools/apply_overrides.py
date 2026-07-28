@@ -94,7 +94,11 @@ CENTERED_FUNCS = set(CENTERED_PAIRS)
 ADD_BUDGET = 60
 LIMIT_BUDGET = 40
 CENTERED_LIMIT_BUDGET = 180
-EXPECTED_SITES = 40
+# Recursive-exit analysis also materializes five bank-$03 LoROM mirrors of
+# already-audited trigger shapes at E357/E35E/E3AF/E3B3/E665. They need the
+# same generated-C rewrite; the private-ROM interpreter pass still patches
+# their shared physical bytes once.
+EXPECTED_SITES = 45
 EXPECTED_PAIRS = 17
 EXPECTED_STREAM_SITES = 4
 EXPECTED_DISPATCH_SITES = 0
