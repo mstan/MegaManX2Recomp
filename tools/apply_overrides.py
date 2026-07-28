@@ -6,11 +6,9 @@ Runs AFTER regen, BEFORE compilation. Injection is marked and idempotent;
 --restore strips every marked line, returning gen to pristine output.
 
 WS-OBJ-WIN -- widen the shared object window checks (X axis only).
-  Unlike MMX1, X2 does not spawn enemies from a camera-anchored record walk:
-  each section's objects are pre-populated as structs ($1818+, stride $20,
-  world coords at dp$05/$08), and three tiny bank-00 helpers gate everything
-  by comparing object world X/Y against the BG1 stream anchor $1E5D/$1E60
-  (== camera; the same anchor the BG margin fill uses):
+  Resident objects use structs at $1818+ (stride $20, world coords at
+  dp$05/$08), and three tiny bank-00 helpers gate them by comparing object
+  world X/Y against the BG1 stream anchor $1E5D/$1E60:
 
     $00:D813  activation window  (objX - cam + $40) < $180   cam-64..+320
     $00:D834  wide visibility    (objX - cam + $60) < $1C0   cam-96..+352
@@ -29,6 +27,12 @@ WS-OBJ-WIN -- widen the shared object window checks (X axis only).
   vanilla when widescreen is off (g_ws_active false) or when the spawn
   widening is kill-switched (SNESRECOMP_WS_SPAWN=0).
 
+WS-SPAWN-STREAM -- widen $00:DC50's 32-pixel dynamic record frontier.
+  Large actors are not resident until this routine asks $00:DCE9 to allocate
+  their level record. Four exact hooks move its left/right probes and widen
+  its vertical sweep. src/x2_rtl.c applies the equivalent signature-gated
+  rewrite to the private runtime ROM for interpreter and full-LLE execution.
+
 Usage:
     python tools/apply_overrides.py [--gen-dir src/gen] [--check] [-v]
     python tools/apply_overrides.py --restore [--gen-dir src/gen] [-v]
@@ -39,7 +43,10 @@ import os
 import re
 import sys
 
-MARKERS = ("/*WS-OBJ-WIN*/",)
+OBJ_MARKER = "/*WS-OBJ-WIN*/"
+STREAM_MARKER = "/*WS-SPAWN-STREAM*/"
+DISPATCH_MARKER = "/*WS-SPAWN-DISPATCH*/"
+MARKERS = (OBJ_MARKER, STREAM_MARKER, DISPATCH_MARKER)
 
 RE_FUNC = re.compile(r"^RecompReturn (bank_[0-9A-Fa-f]{2}_[0-9A-F]{4})_M\dX\d"
                      r"\(CpuState")
@@ -53,28 +60,62 @@ RE_ANCHOR_Y = re.compile(
     r"cpu_read16\(cpu, (?:cpu->DB|0x7e), \(uint16\)\(0x1e60\)\)", re.I)
 RE_CONST = re.compile(r"^(\s*)uint16 (_v\d+) = (0x[0-9a-f]+);\s*$")
 
-ADD_CONSTS = {"0x20", "0x40", "0x60"}
-LIMIT_CONSTS = {"0x140", "0x180", "0x1c0"}
+# The shared helpers use $20/$40/$60. Several per-type copies use the same
+# symmetric formula with wider native padding:
+#
+#     (objX - camX + add) < (0x100 + 2 * add)
+#
+# Keep those emitted bodies on the same dynamic-margin path too. The runtime
+# ROM scan in x2_rtl.c supplies identical coverage when a body is interpreted.
+ADD_CONSTS = {"0x20", "0x40", "0x60", "0x80", "0xa0"}
+LIMIT_CONSTS = {"0x140", "0x180", "0x1c0", "0x200", "0x240"}
 # Camera-relative TRIGGER idiom: $1E5D read -> add-const -> CMP against the
 # object's own dp$05 world X (a memory compare, invisible to the window
 # pass above). Per-type wake/attack lines tuned to the native view; the
-# owner-reported frog/pickup/rocket pop-ins are this family.
+# Pickup/rocket-style per-type pop-ins use this family. The slot-3 frog was
+# later traced to the separate DC50 record streamer below.
 TRIG_ADDS = {"0x20", "0x40", "0x60", "0x80", "0xa0", "0xc0", "0x100",
              "0x110", "0x120", "0x140"}
 RE_DP5 = re.compile(
     r"cpu_read16\(cpu, 0x00, \(uint16\)\(cpu->D \+ 0x0005\)\)")
+RE_CMP_TEMP = re.compile(r"\buint32 _tc\d+_\d+ =")
+# These symmetric distance checks subtract dp+$05 between their first add and
+# immediate limit. Their emitted arithmetic is longer than an ordinary pair,
+# but the first add and final limit still require the normal +m/+2m rewrite.
+CENTERED_PAIRS = {
+    "bank_04_CBE8": ("0x80", "0x1c0"),
+    "bank_29_85F1": ("0x80", "0x1c0"),
+}
+CENTERED_FUNCS = set(CENTERED_PAIRS)
 # Emitted-line budgets: in every observed body the add constant lands within
 # a few lines of the anchor read (the ADC follows the SBC immediately) and
 # the limit within the CMP that follows. A generous budget still rejects
 # far-away unrelated constants.
 ADD_BUDGET = 60
 LIMIT_BUDGET = 40
+CENTERED_LIMIT_BUDGET = 180
+EXPECTED_SITES = 40
+EXPECTED_PAIRS = 17
+EXPECTED_STREAM_SITES = 4
+EXPECTED_DISPATCH_SITES = 0
 
 
 def win_snippet(indent, var, kind, const):
     fn = "X2WsObjWinAdd" if kind == "add" else "X2WsObjWinLimit"
-    return (f"{indent}/*WS-OBJ-WIN*/ {{ extern uint16 {fn}(uint16); "
+    return (f"{indent}{OBJ_MARKER} {{ extern uint16 {fn}(uint16); "
             f"{var} = {fn}({const}); }}\n")
+
+
+def spawn_stream_snippet(indent, var, kind):
+    helpers = {
+        "left": "X2WsSpawnStreamLeft",
+        "right": "X2WsSpawnStreamRightAdd",
+        "grid_pad": "X2WsSpawnStreamGridPad",
+        "columns": "X2WsSpawnStreamColumns",
+    }
+    fn = helpers[kind]
+    return (f"{indent}{STREAM_MARKER} {{ extern uint16 {fn}(uint16); "
+            f"{var} = {fn}({var}); }}\n")
 
 
 def apply_obj_windows(lines, verbose, fname):
@@ -116,9 +157,16 @@ def apply_obj_windows(lines, verbose, fname):
             continue
         indent, var, const = m.groups()
         if state[0] == "add" and const in ADD_CONSTS:
-            state = ("limit", LIMIT_BUDGET, idx, (indent, var, const))
+            limit_budget = (CENTERED_LIMIT_BUDGET
+                            if cur_fn in CENTERED_FUNCS else LIMIT_BUDGET)
+            state = ("limit", limit_budget, idx, (indent, var, const))
         elif state[0] == "limit" and const in LIMIT_CONSTS:
             add_idx, add_m = state[2], state[3]
+            add_value = int(add_m[2], 16)
+            symmetric = int(const, 16) == 0x100 + 2 * add_value
+            centered = CENTERED_PAIRS.get(cur_fn) == (add_m[2], const)
+            if not symmetric and not centered:
+                continue
             inject[add_idx] = (add_m[0], add_m[1], "add", add_m[2], cur_fn)
             inject[idx] = (indent, var, "limit", const, cur_fn)
             n_pairs += 1
@@ -157,7 +205,12 @@ def apply_obj_windows(lines, verbose, fname):
                 and idx not in inject:
             state = ("added", idx, mc.groups(), 30)
             continue
-        if state[0] == "added" and RE_DP5.search(line):
+        # A dp+$05 read alone is not a trigger: SBC and LDA use the same
+        # emitted read shape. Require the compare temporary that immediately
+        # follows a generated CMP instruction.
+        is_cmp = any(RE_CMP_TEMP.search(follow)
+                     for follow in lines[idx + 1:idx + 6])
+        if state[0] == "added" and RE_DP5.search(line) and is_cmp:
             add_idx, (indent, var, const) = state[1], state[2]
             if add_idx not in inject:
                 inject[add_idx] = (indent, var, "add", const,
@@ -175,17 +228,87 @@ def apply_obj_windows(lines, verbose, fname):
             n += 1
             if verbose:
                 print(f"  WS-OBJ-WIN {kind} {const} in {fn} ({fname})")
-    return out, n
+    return out, n, n_pairs
+
+
+def apply_spawn_stream(lines, verbose, fname):
+    """Widen $00:DC50's dynamic object-record scan grid.
+
+    This is separate from the resident-object windows above: DC50 decides
+    when a level record is allocated at all. Its right-moving scan samples
+    camera+$100, its left-moving scan samples camera, and its vertical scan
+    covers ten 32-pixel columns from camera-$20.
+    """
+    inject = {}
+    cur_fn = None
+    block = None
+    grid_pad_seen = False
+    assign = re.compile(r"^(\s*)uint16 (_v\d+) =")
+    label = re.compile(r"^\s*L_(DC70|DC86|DCC8)_M0X0:")
+
+    for idx, line in enumerate(lines):
+        match = RE_FUNC.match(line)
+        if match:
+            cur_fn = match.group(1)
+            block = None
+        elif line.startswith("RecompReturn "):
+            cur_fn = None
+            block = None
+        if cur_fn != "bank_00_DC50":
+            continue
+
+        match = label.match(line)
+        if match:
+            block = match.group(1)
+            grid_pad_seen = False
+            continue
+
+        if block == "DC70" and RE_ANCHOR_X.search(line):
+            match = assign.match(line)
+            if match:
+                inject[idx] = (match.group(1), match.group(2), "left")
+                block = None
+            continue
+
+        match = RE_CONST.match(line)
+        if not match:
+            continue
+        indent, var, const = match.groups()
+        if block == "DC86" and const == "0x100":
+            inject[idx] = (indent, var, "right")
+            block = None
+        elif block == "DCC8" and not grid_pad_seen and const == "0x20":
+            inject[idx] = (indent, var, "grid_pad")
+            grid_pad_seen = True
+        elif block == "DCC8" and grid_pad_seen and const == "0xa":
+            inject[idx] = (indent, var, "columns")
+            block = None
+
+    out = []
+    for idx, line in enumerate(lines):
+        out.append(line)
+        if idx in inject:
+            indent, var, kind = inject[idx]
+            out.append(spawn_stream_snippet(indent, var, kind))
+            if verbose:
+                print(f"  WS-SPAWN-STREAM {kind} in bank_00_DC50 ({fname})")
+    return out, len(inject)
+
+
+def apply_spawn_dispatch(lines, verbose, fname):
+    """Strip the superseded dispatch experiment through MARKERS cleanup."""
+    return lines, 0
 
 
 def process_file(path, restore, check, verbose):
     with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    had_markers = any(any(mk in ln for mk in MARKERS) for ln in lines)
+    old_markers = sum(
+        any(marker in line for marker in MARKERS) for line in lines)
     if restore:
-        if not had_markers:
-            return 0
+        if not old_markers:
+            return 0, 0, 0, 0, 0, False
         kept = [ln for ln in lines if not any(mk in ln for mk in MARKERS)]
         if not check:
             with open(path, "w", encoding="utf-8", newline="\n") as f:
@@ -193,20 +316,33 @@ def process_file(path, restore, check, verbose):
         n = len(lines) - len(kept)
         if verbose:
             print(f"{os.path.basename(path)}: stripped {n} injected line(s)")
-        return n
+        return n, 0, 0, 0, 0, False
 
-    if had_markers:
-        if verbose:
-            print(f"{os.path.basename(path)}: already injected, skipping")
-        return 0
-
-    out, n = apply_obj_windows(lines, verbose, os.path.basename(path))
-    if n and not check:
+    clean = [
+        line for line in lines
+        if not any(marker in line for marker in MARKERS)
+    ]
+    out, obj_sites, pairs = apply_obj_windows(
+        clean, verbose, os.path.basename(path))
+    out, stream_sites = apply_spawn_stream(
+        out, verbose, os.path.basename(path))
+    out, dispatch_sites = apply_spawn_dispatch(
+        out, verbose, os.path.basename(path))
+    matches = lines == out
+    stale = old_markers > 0 and not matches
+    if not matches and not check:
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.writelines(out)
-    if n and verbose:
-        print(f"{os.path.basename(path)}: injected {n} site(s)")
-    return n
+    changed = max(
+        0, obj_sites + stream_sites + dispatch_sites - old_markers)
+    if verbose:
+        if matches:
+            print(f"{os.path.basename(path)}: injections verified")
+        elif check:
+            print(f"{os.path.basename(path)}: would normalize injections")
+        else:
+            print(f"{os.path.basename(path)}: normalized injections")
+    return changed, obj_sites, pairs, stream_sites, dispatch_sites, stale
 
 
 def main():
@@ -219,23 +355,50 @@ def main():
     args = ap.parse_args()
 
     files = sorted(glob.glob(os.path.join(args.gen_dir, "bank*_v2.c")))
+    dispatch = os.path.join(args.gen_dir, "dispatch_v2.c")
+    if os.path.isfile(dispatch):
+        files.append(dispatch)
     if not files:
         print(f"apply_overrides: no gen files under {args.gen_dir}",
               file=sys.stderr)
         return 1
 
     total = 0
+    obj_sites = 0
+    pairs = 0
+    stream_sites = 0
+    dispatch_sites = 0
+    stale_files = []
     for path in files:
-        total += process_file(path, args.restore, args.check, args.verbose)
+        (changed, file_obj, file_pairs, file_stream, file_dispatch,
+         stale) = process_file(
+            path, args.restore, args.check, args.verbose)
+        total += changed
+        obj_sites += file_obj
+        pairs += file_pairs
+        stream_sites += file_stream
+        dispatch_sites += file_dispatch
+        if stale:
+            stale_files.append(path)
 
     verb = "stripped" if args.restore else "injected"
     print(f"apply_overrides: {verb} {total} site(s)")
-    # Known idiom population: the 3 shared helpers (7 M/X bodies) + 4 inlined
-    # copies = 11 pairs = 22 sites at the 2026-07-26 coverage. Require at
-    # least the shared helpers (14 sites) unless restoring or already applied.
-    if not args.restore and total not in (0,) and total < 14:
-        print("apply_overrides: FEWER SITES THAN EXPECTED -- emitted shapes "
-              "may have changed; verify before building.", file=sys.stderr)
+    # Recompute the expected marked output from clean generated code every
+    # time. This validates shape and placement, not merely marker totals.
+    if (not args.restore and
+            (obj_sites != EXPECTED_SITES or pairs != EXPECTED_PAIRS or
+             stream_sites != EXPECTED_STREAM_SITES or
+             dispatch_sites != EXPECTED_DISPATCH_SITES)):
+        print(f"apply_overrides: expected {EXPECTED_SITES} object sites/"
+              f"{EXPECTED_PAIRS} pairs and {EXPECTED_STREAM_SITES} stream "
+              f"sites/{EXPECTED_DISPATCH_SITES} dispatch sites, got "
+              f"{obj_sites}/{pairs}, {stream_sites}, and {dispatch_sites} "
+              "-- verify generated coverage before building.",
+              file=sys.stderr)
+        return 1
+    if args.check and stale_files:
+        print("apply_overrides: marked files do not match a clean structural "
+              "reinjection: " + ", ".join(stale_files), file=sys.stderr)
         return 1
     return 0
 

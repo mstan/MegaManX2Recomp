@@ -647,35 +647,44 @@ Also fixed here: the fill's row range now covers the full wrapped-Y fold
 rows far from the frame vScroll and racked up millions of margin misses
 against the old 30-row fill (found via `ws_shadow_stats`).
 
-## OPEN: the frog-class pop-in survives the trigger sweep — state of play
+## RESOLVED: frog-class pop-in was the dynamic record frontier
 
-Owner-verified: the trigger sweep did NOT fix the visible pop-in ("4:3
-spawning everywhere"; deterministic repro = owner save slot 3, Wire Sponge
-stage start, hold right — the frog appears at logical ~300 instead of
-entering pre-drawn). Investigation state, so nobody re-derives it:
+The 2026-07-27 constrained spike first closed the generated/interpreter
+window mismatch, but a deterministic A/B of owner save slot 3 showed no actor
+or OAM timing change. The frog still first entered the gutter at the native
+frontier. WLOG of the `$6220` display-list emitter then identified actor slot
+`$0D18`; its allocation came from `$00:DCE9`, not from a dormant resident
+object's window check.
 
-* The frog is an OBJ sprite (LAYER_MASK=16 shows it), NOT BG-drawn.
-* It is NOT in the $1818 enemy array (no writes there during the visible
-  transition), NOT in $10D8-$1317 (array silent in gameplay), and the
-  mid-screen births logged in $1818 during walks are ambient effects
-  (bank_01_EB0D copies $09DD player X into its own dp$05 — a follower).
-* **Found via the $6220 display-list writer's X register** (the state dump
-  in `SNESRECOMP_WLOG_ADDR=6220:63FF` lines): sprite emitters run with
-  slot bases **$0D18 and $1358/$1398/$13D8** — object arrays that were
-  never enumerated. $1318+ stride $40 = a second large-actor bank, most
-  likely pumped by the `$00:D0C2` loop ($1F25-selected alternate of D0A0,
-  see $00:CEB0-CEC7). THE FROG LIVES THERE.
-* Next step: WLOG `1318:1817` (and `0D18:10D7`) during the slot-3 repro,
-  find the frog's slot + its wake write between the invisible frame
-  (logical 312) and visible frame (logical ~300), and widen ITS gate.
-  The wake check may be the same shared D813/D834/D859 helpers reached
-  through the D0C2 pump — in which case check the M/X variant actually
-  taken (a call in a mode with no AOT variant falls to the interpreter
-  and executes the ORIGINAL constants; D834 exists only as M1X1).
-  That interp-fallback hole applies to every injected site and may be the
-  real reason widenings "don't take" for whole object classes.
+`$00:DC50` is a global 32-pixel level-record streamer:
 
-## Camera-TRIGGER family: the remaining spawn pop-ins (frog, pickup, rockets)
+* left travel probes the camera bucket;
+* right travel probes `camera+$0100`;
+* vertical travel scans 10 buckets from `camera-$20`;
+* `$00:DCE9` maps each probe to a record bucket, skips records already
+  allocated, and creates the matching large actor.
+
+The fix adds four structural generated hooks and an equivalent private-ROM
+patch. With 342-wide output, the 75-pixel `margin+32` budget rounds outward
+to 96 pixels: left `camera-$60`, right `camera+$160`, and a 15-bucket
+vertical sweep. The interpreter left arm is replaced in place with
+`SBC #(extra-1); NOP; JMP existing_STA_00`; it is the same seven bytes and
+same 12 CPU cycles as the original arm. All signatures must match before any
+stream byte is changed, and widescreen-off/`SNESRECOMP_WS_SPAWN=0` restores
+the exact vanilla bytes.
+
+Final slot-3 A/B, same save and input:
+
+* widened: `$0D18` allocated after 47 right-input frames at camera X=64;
+* kill switch: allocated after 113 frames at camera X=161;
+* improvement: 66 input frames / 97 camera pixels, placing initialization
+  outside the visible gutter instead of at its native edge.
+
+The earlier trigger work remains valid, but the frog was not a trigger-family
+object. Its OBJ/display-list observations were useful because they led to the
+previously unenumerated `$0D18` dynamic actor bank.
+
+## Camera-TRIGGER family: other per-type pop-ins (pickups, rockets)
 
 Owner-reported pop-ins that survived the window sweep (`spawns at 4:3,
 culls at 16:9`) come from a third idiom the pair-scan could not see: per-
@@ -688,8 +697,9 @@ object's OWN world X — a MEMORY compare, not an immediate limit:
 Dormant objects skip the (already widened) shared draw windows entirely,
 so they pop exactly when this line reaches them — tuned to the native
 view. apply_overrides.py pass 3 widens the add through X2WsObjWinAdd,
-pair-confirmed by the dp$05 compare (8 sites, banks 04/07/08/29/2A; the
-inject total is now 30). Same WS-SPAWN kill-switch and margin+32 budget.
+pair-confirmed by the dp$05 compare (6 sites in banks 07/08/2A; 40 total
+object-window rewrites including 17 complete pairs). Same WS-SPAWN
+kill-switch and margin+32 budget.
 (Bug found on the way: the injector's function regex was missing case-
 insensitivity and skipped `bank_2A_*` bodies.)
 
@@ -726,6 +736,7 @@ Per-frame AI pump at `$00:CF00` runs direct-page object arrays; each loop
 TCDs through slots and dispatches `JSR ($F653,X)` (or table siblings):
 
     $0B48-$0CC7  stride $20  via $00:D107/D124   (shots/effects)
+    $0D18-$10D7  stride $40  dynamic large actors (frog slot; $00:DCE9)
     $10D8-$1317  stride $40  via $00:D0A0        (large actors)
     $1818-$1D17  stride $20  via $00:D008/D02D   (enemies)
     $1D18-$1E17  stride $10  via $00:D05E/D07F   (small effects)
@@ -736,8 +747,10 @@ state bits. Spawn-init burst example: the bee generator type ($07:A653, an
 AI-driven emitter) allocates via `JSL $00:DA97` and fills a slot in one
 frame (caught with `SNESRECOMP_WLOG_ADDR=1700:1AFF`).
 
-**X2 has no MMX1-style camera-anchored record walk.** Sections pre-populate
-object structs; everything else is gated by shared window checks.
+Resident `$1818+` objects are section-populated, but X2 also has a global
+camera-anchored record walk: `$00:DC50` selects 32-pixel buckets and
+`$00:DCE9` allocates records into the large-actor banks. Once allocated,
+those actors join the shared activation/visibility/draw window system.
 
 ## The three shared window checks — WIDENED (tools/apply_overrides.py)
 
@@ -801,8 +814,10 @@ first generic pass wrongly hit four of those — bank_00_DC50, bank_01_CC61,
 bank_08_AC32, bank_29_9FFF — and the pair requirement exists because of
 them). `$1E60` (camera Y) reads disarm the tracker, keeping Y windows
 authentic — necessary because D834's Y pair reuses the $180 constant.
-22 sites total at current AOT coverage; the injector fails loudly if a
-regen changes the emitted shapes.
+The current structural census is 17 complete pairs (34 rewrites) plus six
+camera triggers, or 40 object-window rewrites; DC50 contributes four separate
+streamer hooks. The injector fails loudly if a regen changes any emitted
+shape or marker placement.
 
 ## Weather overlays: measured + FIXED (owner rain save, slot 8)
 

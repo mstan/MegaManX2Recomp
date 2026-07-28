@@ -1,6 +1,6 @@
 # 16:9 widescreen — Mega Man X2
 
-## Status: HUD + BG margins DONE; spawn/cull (parts 3-4) still open.
+## Status: HUD + BG margins done; slot-3 spawn repro fixed; broad playtest pending.
 
 Done, measured, and documented in `docs/OAM_SURVEY.md`:
 * **HUD anchoring** (part 2) — signature-gated, owner-validated.
@@ -13,8 +13,21 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
 * **Object windows (parts 3-4, phase 1)** — the three shared bank-00
   activation/visibility/draw window checks are widened by margin+32 via
   `tools/apply_overrides.py` (marker-injected into src/gen, restorable,
-  wired into regen.sh). Enemies act and render in the gutters
+  wired into regen.sh). `x2_rtl.c` applies the identical rewrites to the
+  private runtime ROM copy, covering interpreter M/X fallbacks and routines
+  with no generated body. Enemies act and render in the gutters
   (screenshot-verified). Kill-switch `SNESRECOMP_WS_SPAWN=0`.
+
+* **Dynamic record frontier** — the slot-3 frog exposed a separate gate:
+  `$00:DC50` scans 32-pixel level-record buckets and `$00:DCE9` allocates the
+  large actor only after its bucket reaches the native camera frontier.
+  Four exact generated hooks now widen DC50's left/right probes and its
+  vertical sweep. At 342 pixels the live `margin+32` budget rounds outward to
+  96 pixels and the sweep grows from 10 to 15 buckets. A separate,
+  fail-closed signature patch applies the same values to the private runtime
+  ROM, including a cycle-exact seven-byte left-arm rewrite, so interpreter
+  tail-JMP and full-LLE execution are covered too. The on-disk ROM is never
+  changed.
 
 * **Weather overlays (rain, and by signature the heat shimmer)** — the
   weather is BG3 alone on the SUBSCREEN blended via color math (measured
@@ -24,27 +37,38 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   clamp. A/B-measured: 478 vs 198 bright rain pixels in the east gutter,
   native identical. Kill-switch `SNESRECOMP_WS_BG3=0`.
 
-* **Inlined window copies swept** — apply_overrides.py now finds every
-  camera-window idiom structurally (pair-confirmed $1E5D + add + limit),
-  covering the four per-enemy inlined variants in banks 02/03/07 alongside
-  the shared helpers (22 sites). The earlier "$09DD frontier" hypothesis is
+* **Inlined window copies swept** — apply_overrides.py recognizes symmetric
+  pairs through `$A0/$240` and centered-distance checks whose first add and
+  final limit must both grow. The current generated coverage has 40
+  object-window rewrites plus four DC50 streamer rewrites. The runtime
+  object-window census has 38 source-ROM operands plus six
+  power-of-two cart mirrors, including `$00:DDB5`, which has no emitted body.
+  DC50 has an independent exact-signature gate.
+  The earlier "$09DD frontier" hypothesis is
   DISPROVEN ($09DD = player/attention X — see OAM_SURVEY.md); the
   first-appearance probe shows no pop-in at the 16:9 edge in the surveyed
   area.
 
 * **Camera-trigger family swept** (pass 3): dormant per-type wake lines
-  (`camera + K` vs the object's own dp$05 — a memory compare) widened at
-  8 sites; this is the frog/pickup/rocket "spawns at 4:3" class. Weather
-  margins now use the line-REPEAT policy instead of map wrap (uniform
-  gutter rain by construction).
+  (`camera + K` followed by an actual `CMP dp+$05`) widen only their frontier.
+  A plain read of `$05` no longer qualifies. Centered windows widen both the
+  leading offset and final limit, avoiding the earlier whole-window shift.
+  This covers pickup/rocket-style "spawns at 4:3" behavior; the frog proved
+  to be the separate dynamic-record frontier above. Weather margins now use
+  the line-REPEAT policy instead of map wrap.
+
+* **Sparse vertical margins** — the exact BG provider now proves sparse level
+  sources with six non-modal native-view matches instead of standing down on
+  a mostly empty sample. The retained slot-0 vertical-fall replay keeps both
+  layers active with zero west/east shadow misses; wrapped stale rows are
+  absent.
 
 Still open before the toggle ships:
 * heat-shimmer visual confirmation in play (same mechanism as rain, so the
   BG3 gate should cover it — unverified);
-* owner playtest across stages: trigger-family pop-in fixes are verified
-  by construction, not gameplay (the scripted probe cannot survive the
-  rocket-platform pit); any residual pop-in means yet another per-type
-  variant — find it by type.
+* owner playtest across stages and both travel directions. The deterministic
+  slot-3 frog repro is fixed, but other record types may have additional
+  per-type wake consumers and should be traced by type if one still pops.
 
 The shipped default is native 256x224. `Widescreen` and `NoSpriteLimits` are both
 **0** in the embedded default inside `src/main.c` (that string, not the repo-root

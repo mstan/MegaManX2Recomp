@@ -43,6 +43,7 @@ static bool s_lle_did_reset = false;
 static uint32_t s_lle_resume_pc = 0;
 static unsigned s_lle_host_frames = 0;
 static bool s_lle_extra_loaded = false;
+static void x2_patch_ws_interp_obj_windows(void);
 
 /* Read a 16-bit CPU vector out of bank $00's vector table. */
 static uint32_t x2_read_vector_pc24(uint16_t vec_addr) {
@@ -87,6 +88,12 @@ static int x2_boot_log_enabled(void) {
 }
 
 void RunOneFrameOfGame(void) {
+  /* Generated bodies route viewport constants through X2WsObjWin*.
+   * Interpreter fallbacks fetch the original ROM bytes, so mirror the same
+   * dynamic constants into the private runtime ROM copy before either tier
+   * runs this frame. */
+  x2_patch_ws_interp_obj_windows();
+
   if (!s_lle_did_reset) {
     cpu_state_init(&g_cpu, g_ram);
     s_lle_resume_pc = x2_read_vector_pc24(0xFFFC);
@@ -540,9 +547,9 @@ void X2ConfigureWsBgMargins(void) {
 
 /* ── 16:9 object windows (spawn/activation/draw) ──────────────────────────
  *
- * X2 pre-populates each section's objects as structs ($1818+, world coords
- * at dp$05/$08) and gates everything through three shared bank-00 window
- * checks against the camera anchor $1E5D/$1E60:
+ * X2's resident section objects ($1818+, world coords at dp$05/$08), plus
+ * large actors after DC50/DCE9 allocate them, pass through three shared
+ * bank-00 window checks against the camera anchor $1E5D/$1E60:
  *
  *   $00:D813  activation  (objX - cam + $40) < $180    cam-64..+320
  *   $00:D834  visibility  (objX - cam + $60) < $1C0    cam-96..+352
@@ -575,6 +582,343 @@ uint16 X2WsObjWinAdd(uint16 base) {
 
 uint16 X2WsObjWinLimit(uint16 base) {
   return (uint16)(base + 2 * x2_ws_spawn_margin());
+}
+
+/* $00:DC50 streams dynamic object records one 32-pixel column at a time.
+ * Vanilla samples the native camera edges, so large actors can be allocated
+ * only after entering a widescreen gutter even when their later
+ * activation/draw windows are already widened. Keep the stream grid aligned
+ * and move it beyond the visible margin plus the same 32-pixel wake slack. */
+static uint16_t x2_ws_spawn_stream_left_extra(void) {
+  int margin = x2_ws_spawn_margin();
+  return margin ? (uint16_t)((margin + 31) & ~31) : 0;
+}
+
+static uint16_t x2_ws_spawn_stream_right_extra(void) {
+  int margin = x2_ws_spawn_margin();
+  /* Round outward, not inward. The slot-3 frog can sit near the far end of
+   * its 32-pixel record bucket and needs several initialization frames before
+   * it emits OAM; rounding down allocated it at screen X=336 in a 342px view. */
+  return margin ? (uint16_t)((margin + 31) & ~31) : 0;
+}
+
+uint16 X2WsSpawnStreamLeft(uint16 camera) {
+  return (uint16)(camera - x2_ws_spawn_stream_left_extra());
+}
+
+uint16 X2WsSpawnStreamRightAdd(uint16 base) {
+  return (uint16)(base + x2_ws_spawn_stream_right_extra());
+}
+
+uint16 X2WsSpawnStreamGridPad(uint16 base) {
+  uint16_t extra = x2_ws_spawn_stream_left_extra();
+  return extra ? extra : base;
+}
+
+uint16 X2WsSpawnStreamColumns(uint16 base) {
+  uint16_t left = x2_ws_spawn_stream_left_extra();
+  uint16_t right = x2_ws_spawn_stream_right_extra();
+  if (!left)
+    return base;
+  /* Inclusive grid lines from camera-left through camera+$100+right.
+   * The native ten lines already include camera-$20. At 342px this is
+   * fifteen lines: three outward buckets on each side. */
+  return (uint16)(9 + (left >> 5) + (right >> 5));
+}
+
+/* Interpreter and full-LLE execution need the same DC50 frontier changes.
+ * Three sites are ordinary 16-bit operands. The seven-byte left arm has no
+ * immediate, but arrives with A=(camera&$FFE0), C=0; an equal-length
+ * SBC/NOP/JMP sequence subtracts the live grid padding and rejoins at the
+ * existing STA $00 with the original 12-cycle timing. DCE9 masks dp$00 to a
+ * 32-pixel bucket before using it. */
+typedef struct X2WsSpawnStreamRom {
+  uint8_t *left_arm;
+  uint8_t *right_operand;
+  uint8_t *grid_operand;
+  uint8_t *columns_operand;
+} X2WsSpawnStreamRom;
+
+static X2WsSpawnStreamRom s_x2_ws_stream_rom;
+static bool s_x2_ws_stream_scanned;
+static bool s_x2_ws_stream_valid;
+
+static void x2_scan_ws_spawn_stream(void) {
+  if (!g_snes || !g_snes->cart || !g_snes->cart->rom)
+    return;
+
+  uint8_t *rom = g_snes->cart->rom;
+  size_t size = g_snes->cart->romSize;
+  uint8_t *body = cart_getRomPtr(g_snes->cart, 0x00, 0xDC50);
+  static const uint8_t kEntry[] = {
+      0x8B, 0x0B, 0x08, 0xC2, 0x30, 0xA9, 0x00, 0x00,
+      0x5B, 0xAD, 0x7A, 0x1E, 0xCD, 0x5D, 0x1E, 0x30,
+      0x16,
+  };
+  static const uint8_t kLeftState[] = {
+      0xAD, 0x5D, 0x1E, 0x29, 0xE0, 0xFF, 0xC5, 0x00,
+      0xF0, 0x30,
+      0xAD, 0x5D, 0x1E, 0x85, 0x00, 0x80, 0x18,
+  };
+  static const uint8_t kRight[] = {
+      0xAD, 0x5D, 0x1E, 0x18, 0x69, 0x00, 0x01, 0x85,
+      0x00,
+  };
+  static const uint8_t kGrid[] = {
+      0xAD, 0x5D, 0x1E, 0x38, 0xE9, 0x20, 0x00, 0x85,
+      0x00, 0xA9, 0x0A, 0x00, 0x85, 0x06,
+  };
+  static const uint8_t kWalkerMask[] = {
+      0xA5, 0x00, 0x29, 0xE0, 0xFF,
+  };
+  size_t body_offset = body ? (size_t)(body - rom) : size;
+  bool valid =
+      body && body_offset <= size && size - body_offset >= 0xA7 &&
+      memcmp(body, kEntry, sizeof(kEntry)) == 0 &&
+      memcmp(body + 0x16, kLeftState, sizeof(kLeftState)) == 0 &&
+      memcmp(body + 0x36, kRight, sizeof(kRight)) == 0 &&
+      memcmp(body + 0x78, kGrid, sizeof(kGrid)) == 0 &&
+      memcmp(body + 0xA2, kWalkerMask, sizeof(kWalkerMask)) == 0;
+  s_x2_ws_stream_scanned = true;
+  s_x2_ws_stream_valid = valid;
+  if (!valid) {
+    fprintf(stderr,
+            "[x2_ws] $00:DC50 spawn-stream signature mismatch; "
+            "leaving its interpreter bytes unchanged\n");
+    return;
+  }
+  s_x2_ws_stream_rom.left_arm = body + 0x20;
+  s_x2_ws_stream_rom.right_operand = body + 0x3B;
+  s_x2_ws_stream_rom.grid_operand = body + 0x7D;
+  s_x2_ws_stream_rom.columns_operand = body + 0x82;
+
+  const char *debug = getenv("SNESRECOMP_WS_SPAWN_DEBUG");
+  if (debug && debug[0] != '0')
+    fprintf(stderr, "[x2_ws] interpreter spawn-stream signature: exact\n");
+}
+
+static void x2_patch_ws_interp_spawn_stream(void) {
+  if (!s_x2_ws_stream_scanned)
+    x2_scan_ws_spawn_stream();
+  if (!s_x2_ws_stream_scanned || !s_x2_ws_stream_valid)
+    return;
+
+  static const uint8_t kLeftOriginal[] = {
+      0xAD, 0x5D, 0x1E, 0x85, 0x00, 0x80, 0x18,
+  };
+  uint16_t left = x2_ws_spawn_stream_left_extra();
+  uint16_t right = x2_ws_spawn_stream_right_extra();
+  if (!left) {
+    memcpy(s_x2_ws_stream_rom.left_arm, kLeftOriginal,
+           sizeof(kLeftOriginal));
+  } else {
+    uint16_t operand = (uint16_t)(left - 1);
+    uint8_t patched[] = {
+        0xE9, (uint8_t)operand, (uint8_t)(operand >> 8),
+        0xEA, 0x4C, 0x8D, 0xDC,
+    };
+    memcpy(s_x2_ws_stream_rom.left_arm, patched, sizeof(patched));
+  }
+
+  uint16_t right_add = (uint16_t)(0x100 + right);
+  uint16_t grid_pad = left ? left : 0x20;
+  uint16_t columns = X2WsSpawnStreamColumns(0x0A);
+  s_x2_ws_stream_rom.right_operand[0] = (uint8_t)right_add;
+  s_x2_ws_stream_rom.right_operand[1] = (uint8_t)(right_add >> 8);
+  s_x2_ws_stream_rom.grid_operand[0] = (uint8_t)grid_pad;
+  s_x2_ws_stream_rom.grid_operand[1] = (uint8_t)(grid_pad >> 8);
+  s_x2_ws_stream_rom.columns_operand[0] = (uint8_t)columns;
+  s_x2_ws_stream_rom.columns_operand[1] = (uint8_t)(columns >> 8);
+}
+
+/* The LLE-first runtime can execute any non-emitted M/X variant directly from
+ * ROM. Generated-code injection therefore cannot, by itself, cover every
+ * object class. Find the same pair-confirmed horizontal windows and dp+$05
+ * camera triggers in the private cart ROM copy, then rewrite only their
+ * 16-bit immediate operands each frame. This is semantically identical to
+ * X2WsObjWinAdd/Limit and never modifies mmx2.sfc on disk.
+ *
+ * Besides interpreter variants of emitted functions, this finds exact window
+ * routines with no emitted body at all (for example $00:DDB5), which is the
+ * key gap behind whole object pumps retaining native-width behavior. */
+typedef struct X2WsRomImm {
+  uint8_t *operand;
+  uint16_t base;
+  uint8_t margin_scale;
+} X2WsRomImm;
+
+enum { kX2WsRomImmMax = 64, kX2WsRomImmExpected = 44 };
+static X2WsRomImm s_x2_ws_rom_imms[kX2WsRomImmMax];
+static int s_x2_ws_rom_imm_count;
+static bool s_x2_ws_rom_scanned;
+static bool s_x2_ws_rom_valid;
+
+static uint16_t x2_ws_rom_u16(const uint8_t *p) {
+  return (uint16_t)(p[0] | (uint16_t)p[1] << 8);
+}
+
+static bool x2_ws_rom_anchor_at(const uint8_t *p) {
+  return (p[0] == 0xAD && p[1] == 0x5D && p[2] == 0x1E) ||
+         (p[0] == 0xAD && p[1] == 0x60 && p[2] == 0x1E);
+}
+
+static bool x2_ws_trigger_add(uint16_t value) {
+  switch (value) {
+  case 0x20:
+  case 0x40:
+  case 0x60:
+  case 0x80:
+  case 0xA0:
+  case 0xC0:
+  case 0x100:
+  case 0x110:
+  case 0x120:
+  case 0x140:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static void x2_ws_add_rom_imm(uint8_t *operand, uint16_t base,
+                              uint8_t margin_scale) {
+  for (int i = 0; i < s_x2_ws_rom_imm_count; i++) {
+    if (s_x2_ws_rom_imms[i].operand == operand)
+      return;
+  }
+  if (s_x2_ws_rom_imm_count >= kX2WsRomImmMax) {
+    static bool warned;
+    if (!warned) {
+      warned = true;
+      fprintf(stderr, "[x2_ws] interpreter window-site table full\n");
+    }
+    return;
+  }
+  X2WsRomImm *site = &s_x2_ws_rom_imms[s_x2_ws_rom_imm_count++];
+  site->operand = operand;
+  site->base = base;
+  site->margin_scale = margin_scale;
+}
+
+static void x2_scan_ws_rom_imms(void) {
+  if (!g_snes || !g_snes->cart || !g_snes->cart->rom)
+    return;
+
+  uint8_t *rom = g_snes->cart->rom;
+  size_t size = g_snes->cart->romSize;
+  for (size_t i = 3; i + 64 < size; i++) {
+    uint8_t *p = rom + i;
+
+    /* Standard symmetric window:
+     *   [SEC] LDA dp+$05 / [SEC] SBC $1E5D / CLC / ADC #add /
+     *   CMP #($100 + 2*add), followed by the matching Y-axis check. */
+    if (p[0] == 0xED && p[1] == 0x5D && p[2] == 0x1E &&
+        p[3] == 0x18 && p[4] == 0x69 && p[7] == 0xC9) {
+      bool object_x =
+          (p[-2] == 0xA5 && (p[-1] == 0x05 || p[-1] == 0x33)) ||
+          (p[-3] == 0xA5 && p[-2] == 0x05 && p[-1] == 0x38);
+      uint16_t add = x2_ws_rom_u16(p + 5);
+      uint16_t limit = x2_ws_rom_u16(p + 8);
+      if (object_x && add <= 0x140 &&
+          limit == (uint16_t)(0x100 + 2 * add)) {
+        x2_ws_add_rom_imm(p + 5, add, 1);
+        x2_ws_add_rom_imm(p + 8, limit, 2);
+      }
+    }
+
+    /* Bounding-box form used by $02:EB99:
+     * camera-add -> lower, then lower+limit -> upper. */
+    if (p[0] == 0xAD && p[1] == 0x5D && p[2] == 0x1E &&
+        p[3] == 0x38 && p[4] == 0xE9 &&
+        p[7] == 0x85 && p[8] == 0x08 &&
+        p[9] == 0x18 && p[10] == 0x69 &&
+        p[13] == 0x85 && p[14] == 0x06) {
+      uint16_t add = x2_ws_rom_u16(p + 5);
+      uint16_t limit = x2_ws_rom_u16(p + 11);
+      if (add <= 0x140 && limit == (uint16_t)(0x100 + 2 * add)) {
+        x2_ws_add_rom_imm(p + 5, add, 1);
+        x2_ws_add_rom_imm(p + 11, limit, 2);
+      }
+    }
+
+    /* Symmetric distance form:
+     * camera+K - objectX + bias < limit. Widen the leading offset by m and
+     * the final limit by 2m; changing only K shifts the window instead. */
+    if (p[0] == 0xAD && p[1] == 0x5D && p[2] == 0x1E &&
+        p[3] == 0x69 && p[6] == 0x38 &&
+        p[7] == 0xE5 && p[8] == 0x05 &&
+        p[9] == 0x18 && p[10] == 0x69 && p[13] == 0xC9) {
+      uint16_t add = x2_ws_rom_u16(p + 4);
+      uint16_t limit = x2_ws_rom_u16(p + 14);
+      if (add == 0x80 && limit == 0x1C0) {
+        x2_ws_add_rom_imm(p + 4, add, 1);
+        x2_ws_add_rom_imm(p + 14, limit, 2);
+      }
+    }
+
+    /* Per-type wake/attack line: LDA $1E5D, ADC #K, then CMP dp+$05.
+     * This mirrors apply_overrides.py's trigger pass. */
+    if (p[0] == 0xAD && p[1] == 0x5D && p[2] == 0x1E) {
+      bool found = false;
+      for (size_t j = i + 3; j < i + 48 && !found; j++) {
+        if (x2_ws_rom_anchor_at(rom + j))
+          break;
+        if (rom[j] != 0x69)
+          continue;
+        uint16_t add = x2_ws_rom_u16(rom + j + 1);
+        if (!x2_ws_trigger_add(add))
+          continue;
+        for (size_t k = j + 3; k < j + 33 && k < i + 56; k++) {
+          if (x2_ws_rom_anchor_at(rom + k))
+            break;
+          if (rom[k] == 0xC5 && rom[k + 1] == 0x05) {
+            x2_ws_add_rom_imm(rom + j + 1, add, 1);
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  s_x2_ws_rom_scanned = true;
+  s_x2_ws_rom_valid = s_x2_ws_rom_imm_count == kX2WsRomImmExpected;
+  if (!s_x2_ws_rom_valid) {
+    fprintf(stderr,
+            "[x2_ws] expected %d interpreter viewport immediates, found %d; "
+            "leaving ROM constants unchanged because the layout may not match "
+            "the supported revision\n",
+            kX2WsRomImmExpected, s_x2_ws_rom_imm_count);
+  }
+  const char *debug = getenv("SNESRECOMP_WS_SPAWN_DEBUG");
+  if (debug && debug[0] != '0') {
+    fprintf(stderr, "[x2_ws] interpreter viewport immediate census: %d\n",
+            s_x2_ws_rom_imm_count);
+    for (int i = 0; i < s_x2_ws_rom_imm_count; i++) {
+      const X2WsRomImm *site = &s_x2_ws_rom_imms[i];
+      size_t offset = (size_t)(site->operand - rom);
+      fprintf(stderr, "[x2_ws]   $%02X:%04X base=$%04X scale=%u\n",
+              (unsigned)(offset >> 15),
+              (unsigned)(0x8000 + (offset & 0x7FFF)),
+              (unsigned)site->base, (unsigned)site->margin_scale);
+    }
+  }
+}
+
+static void x2_patch_ws_interp_obj_windows(void) {
+  if (!s_x2_ws_rom_scanned)
+    x2_scan_ws_rom_imms();
+  if (s_x2_ws_rom_scanned && s_x2_ws_rom_valid) {
+    uint16_t margin = (uint16_t)x2_ws_spawn_margin();
+    for (int i = 0; i < s_x2_ws_rom_imm_count; i++) {
+      X2WsRomImm *site = &s_x2_ws_rom_imms[i];
+      uint16_t value =
+          (uint16_t)(site->base + site->margin_scale * margin);
+      site->operand[0] = (uint8_t)value;
+      site->operand[1] = (uint8_t)(value >> 8);
+    }
+  }
+  x2_patch_ws_interp_spawn_stream();
 }
 
 void X2DrawPpuFrame(void) {
