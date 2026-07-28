@@ -63,21 +63,22 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   layers active with zero west/east shadow misses; wrapped stale rows are
   absent.
 
-Still open before the toggle ships:
+Still open before calling the implementation broadly validated:
 * heat-shimmer visual confirmation in play (same mechanism as rain, so the
   BG3 gate should cover it — unverified);
 * owner playtest across stages and both travel directions. The deterministic
   slot-3 frog repro is fixed, but other record types may have additional
   per-type wake consumers and should be traced by type if one still pops.
 
-The shipped default is native 256x224. `Widescreen` and `NoSpriteLimits` are both
-**0** in the embedded default inside `src/main.c` (that string, not the repo-root
-`config.ini`, is what a fresh run writes and reads), and the launcher toggle is
-hidden (`gi.widescreen_supported = 0`).
+The shipped default is native 256x224. Widescreen is a built-in,
+default-disabled package on the launcher's **Mods** page. The generic Settings
+toggle remains hidden (`gi.widescreen_supported = 0`) so the mod package is the
+single authoritative activation path. `NoSpriteLimits` is a separate renderer
+setting and remains enabled by default.
 
-An earlier iteration shipped `Widescreen = 1` while every hook was inert — 16:9 on
-with nothing adapted to it. Do not flip any of this back on until the four parts
-below are done and the 4:3 regression gate passes.
+An earlier iteration set `Widescreen = 1` while every hook was inert. The
+current package instead activates the surveyed implementation explicitly and
+returns to authentic 4:3 whenever the feature is disabled.
 
 ## Read `snesrecomp/docs/WIDESCREEN_PATTERNS.md` FIRST
 
@@ -223,10 +224,11 @@ pop in.
   `SNESRECOMP_WS_STAGE`) so a misbehaving part can fall back to authentic 4:3
   independently, with the rest still active.
 
-## Survey plan — what to measure, with what
+## Remaining validation — what to measure, with what
 
-Nothing here can be written without Mega Man X2's addresses. All of these are
-always-on rings; query them, do not arm-then-run:
+The major address families are now recorded above. These always-on rings remain
+the right tools for finding stage-specific exceptions; query them, do not
+arm-then-run:
 
 | question | tool |
 |---|---|
@@ -239,10 +241,16 @@ always-on rings; query them, do not arm-then-run:
 Reaching live gameplay requires a human at the controls — the standing rule is
 that gameplay verdicts are the owner's, not the agent's.
 
-## Turning it on
+## Activation and release gate
 
-Only after 1-4 are done and the 4:3 gate passes:
-1. `gi.widescreen_supported = 1` in `src/main.c`;
-2. optionally flip the embedded default's `Widescreen` to 1;
-3. record what was surveyed **in this file**, so the next person knows what is
-   proven versus assumed.
+The default-disabled `.snesmod` package is the supported activation path. Keep
+the embedded `Widescreen = 0` fallback and
+`gi.widescreen_supported = 0`; enabling the generic Settings toggle would
+create a second, conflicting owner for the same feature.
+
+Before describing the implementation as broadly validated:
+
+1. play every stage in both travel directions;
+2. confirm the heat-shimmer signature in live play;
+3. capture and diff the authentic 4:3 regression baseline; and
+4. record any stage-specific exceptions and their kill-switches in this file.
