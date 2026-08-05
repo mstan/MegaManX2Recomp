@@ -8,7 +8,7 @@ project(MegaManX2SNESRecomp C CXX)
 #     local multi-game working tree);
 #   * generated C in src/gen/ (`bash tools/regen.sh` with a verified
 #     mmx2.sfc staged at the repo root);
-#   * SDL2 + OpenGL.
+#   * SDL3 (or SDL2 via -DSNESRECOMP_SDL_BACKEND=SDL2) + OpenGL.
 
 set(CMAKE_C_STANDARD 11)
 
@@ -21,15 +21,7 @@ set(SNESRECOMP_ENABLE_MODS ON CACHE BOOL
     "Enable MMX2's built-in mod catalog and SNES mod packages" FORCE)
 include(${SNESRECOMP_ROOT}/runner/runner.cmake)
 
-find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
-
-# MinGW's SDL2 package ships SDL2main by default, but main.c provides a plain
-# main() and uses the CRT entry point; SDL2main's WinMain would demand an
-# SDL_main() that does not exist.
-if(WIN32)
-    list(FILTER SDL2_LIBRARIES EXCLUDE REGEX "SDL2main")
-endif()
 
 file(GLOB X2_GEN_SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/gen/*.c)
 if(NOT X2_GEN_SOURCES)
@@ -63,8 +55,12 @@ target_include_directories(MegaManX2SNESRecomp PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/recomp
     ${SNESRECOMP_RUNNER_INCLUDE_DIRS}
-    ${SDL2_INCLUDE_DIRS}
 )
+# SDL3 by default, SDL2 via -DSNESRECOMP_SDL_BACKEND=SDL2. Replaces the game's
+# own find_package(SDL2)/libSDL2.dll.a wiring: recomp-ui now compiles its SDL3
+# backend unconditionally, so hardcoding SDL2 here put two SDL majors in one
+# binary. No SDLmain either way (the host provides a plain main()).
+snesrecomp_target_sdl(MegaManX2SNESRecomp)
 snesrecomp_target_fiber_compat(MegaManX2SNESRecomp)
 snesrecomp_target_post_mortem(MegaManX2SNESRecomp TIER2)
 snesrecomp_target_mmx_config(MegaManX2SNESRecomp)
@@ -99,14 +95,8 @@ target_link_libraries(MegaManX2SNESRecomp PRIVATE
     ${SNESRECOMP_RUNNER_LIBRARIES}
 )
 
-if(WIN32 AND NOT MSVC)
-    # msys2/mingw SDL2 does not auto-rename main()->SDL_main; link SDL2 without
-    # SDL2main. dbghelp is post_mortem.c's StackWalk64 backtrace.
-    target_link_libraries(MegaManX2SNESRecomp PRIVATE
-        C:/msys64/mingw64/lib/libSDL2.dll.a)
-else()
-    target_link_libraries(MegaManX2SNESRecomp PRIVATE ${SDL2_LIBRARIES})
-endif()
+# SDL is linked by snesrecomp_target_sdl() above, for whichever major is
+# selected. dbghelp (below) is post_mortem.c's StackWalk64 backtrace.
 
 if(WIN32)
     target_link_libraries(MegaManX2SNESRecomp PRIVATE ws2_32)
@@ -121,7 +111,11 @@ if(NOT EXISTS "${RECOMP_UI_ROOT}/recomp_ui.cmake")
         "Run: git submodule update --init --recursive recomp-ui")
 endif()
 include(${RECOMP_UI_ROOT}/recomp_ui.cmake)
+# CONSOLE is required by recomp-ui: it selects exactly one validated
+# assets/consoles/<id>/ manifest, so an SNES game cannot silently stage N64
+# cartridge or NES pad art next to the exe.
 recomp_target_launcher_ui(MegaManX2SNESRecomp
+    CONSOLE snes
     BOXART ${CMAKE_SOURCE_DIR}/recomp/launcher/boxart.tga)
 
 # Preload the game-owned catalog. Every feature remains disabled until the
