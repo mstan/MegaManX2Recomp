@@ -43,6 +43,7 @@ static bool s_lle_did_reset = false;
 static uint32_t s_lle_resume_pc = 0;
 static unsigned s_lle_host_frames = 0;
 static bool s_lle_extra_loaded = false;
+static bool s_execution_loaded;
 static void x2_patch_ws_interp_obj_windows(void);
 
 /* Read a 16-bit CPU vector out of bank $00's vector table. */
@@ -955,7 +956,7 @@ typedef struct X2LleSaveChunk {
 void X2StateSaveExtra(SaveLoadInfo *sli) {
   X2LleSaveChunk c;
   memset(&c, 0, sizeof(c));
-  c.magic = kX2LleSaveMagic;
+  c.magic = kX2LleSaveMagic + 1;
   c.resume_pc24 = s_lle_resume_pc;
   c.A = g_cpu.A; c.X = g_cpu.X; c.Y = g_cpu.Y; c.S = g_cpu.S; c.D = g_cpu.D;
   c.DB = g_cpu.DB; c.PB = g_cpu.PB; c.P = g_cpu.P;
@@ -968,6 +969,7 @@ void X2StateSaveExtra(SaveLoadInfo *sli) {
   c.master_cycles = g_cpu.master_cycles;
   c.host_frames = (uint32_t)s_lle_host_frames;
   sli->func(sli, &c, sizeof(c));
+  RtlSaveExecutionState(sli);
 }
 
 void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
@@ -975,7 +977,8 @@ void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
   X2LleSaveChunk c;
   memset(&c, 0, sizeof(c));
   sli->func(sli, &c, sizeof(c));
-  if (c.magic != kX2LleSaveMagic) {
+  s_execution_loaded = false;
+  if (c.magic != kX2LleSaveMagic && c.magic != kX2LleSaveMagic + 1) {
     fprintf(stderr,
             "[x2_rtl] save extra: bad magic $%08X — ignoring LLE chunk\n",
             (unsigned)c.magic);
@@ -996,6 +999,8 @@ void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
   s_lle_resume_pc = c.resume_pc24 & 0xFFFFFFu;
   s_lle_host_frames = c.host_frames ? c.host_frames : 1u;
   s_lle_extra_loaded = true;
+  if (c.magic == kX2LleSaveMagic + 1)
+    s_execution_loaded = RtlLoadExecutionState(sli);
   fprintf(stderr, "[x2_rtl] LLE load extra resume=$%06X master=%llu\n",
           (unsigned)s_lle_resume_pc,
           (unsigned long long)g_cpu.master_cycles);
@@ -1003,6 +1008,8 @@ void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
 
 void X2OnStateLoaded(uint32_t version) {
   (void)version;
+  if (s_execution_loaded) RtlApplyExecutionState();
+  s_execution_loaded = false;
   if (s_lle_extra_loaded) {
     s_lle_did_reset = true; /* resume mid-game, skip cold RESET */
   } else {
