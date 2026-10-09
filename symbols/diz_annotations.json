@@ -1,0 +1,36 @@
+{
+  "format_version": 1,
+  "game": "x2",
+  "upstream_url": "https://github.com/bogaa/dizProjects",
+  "upstream_commit": "b60813ef4785a2f87b1f601e4f8a2be0ee38d9a4",
+  "project_path": "snes/Megaman X2/MMX2.diz",
+  "project_sha256": "23e3db2583f281325649e4594c9da50d8d3f5ca4ec2cb9c3220e0ad523027dca",
+  "rom_sha1": "637079014421563283CDED6AEAA0604597B2E33C",
+  "rom_sha256": "f3246755f608a1e1dc9c848b61da3b824c7853b29b3be40df6fc7f2793a887ed",
+  "rom_size": 1572864,
+  "byte_counts": {
+    "data16": 4,
+    "data8": 17,
+    "opcode": 32462,
+    "operand": 40084,
+    "pointer16": 32,
+    "text": 27,
+    "unknown": 1500238
+  },
+  "classified_percent": 4.62,
+  "labels_by_kind": {
+    "opcode": 1
+  },
+  "overlay_symbols": 2,
+  "instruction_count": 32462,
+  "instruction_boundary_mismatches": [],
+  "policy": "Discovery metadata only. Unknown is not data. Recorded modes and classifications are not execution contracts.",
+  "labels": [
+    {
+      "address": "018000",
+      "name": "Emulation_RESET",
+      "kind": "opcode",
+      "project_name": ""
+    }
+  ]
+}
