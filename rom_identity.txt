@@ -1,0 +1,8 @@
+display_name = Mega Man X2
+rom_file = mmx2.sfc
+expected_crc32 = 947B0355
+expected_sha256 = f3246755f608a1e1dc9c848b61da3b824c7853b29b3be40df6fc7f2793a887ed
+rom_size = 1572864
+mapping = LoROM + Cx4
+region = USA
+game_id = megaman-x2-us
