@@ -2,7 +2,7 @@
   "format_version": 1,
   "game": "x2",
   "upstream_url": "https://github.com/bogaa/dizProjects",
-  "upstream_commit": "b60813ef4785a2f87b1f601e4f8a2be0ee38d9a4",
+  "upstream_commit": "c16f01134f29e4a61b41a3d8ddf5121b556cbdc7",
   "project_path": "snes/Megaman X2/MMX2.diz",
   "project_sha256": "23e3db2583f281325649e4594c9da50d8d3f5ca4ec2cb9c3220e0ad523027dca",
   "rom_sha1": "637079014421563283CDED6AEAA0604597B2E33C",
