@@ -775,6 +775,8 @@ void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
 
 void X2OnStateLoaded(uint32_t version) {
   (void)version;
+  /* Renderer history belongs to the abandoned timeline, not this snapshot. */
+  WsShadowReset();
   if (s_execution_loaded) RtlApplyExecutionState();
   s_execution_loaded = false;
   if (s_lle_extra_loaded) {

@@ -254,3 +254,22 @@ Before describing the implementation as broadly validated:
 2. confirm the heat-shimmer signature in live play;
 3. capture and diff the authentic 4:3 regression baseline; and
 4. record any stage-specific exceptions and their kill-switches in this file.
+
+## Door feedback follow-up (2026-10-26)
+
+Pin the shared X2/X3 resolver with X1's strict mirrored door-body policy.
+The camera's room-facing column stays visible; the duplicate face samples
+the neighboring wall, including during recent dynamic uploads. Symmetric
+wall decoration is explicitly rejected by the detector. The Serges approach
+and interior now show one face per doorway on both sides.
+
+Reset unsaved renderer history on state loads. A continuous/reloaded door
+crossing matches all WRAM bytes and rendered pixels. Production C regressions
+cover the measured X2/X3 door patterns, wall rejection, native identity and
+override precedence. Muted debug/software rendering measured about227fps in
+the doorway scene; this is headroom evidence, not release benchmarking.
+
+The owner's rocket-ascent/boss margin failures and missing Serges entrance
+art remain open. Earlier pre-launch rocket approach evidence does not qualify
+the actual ride. Boss Rush's requested native framing remains in place, and
+accepted mechanics checks should not be repeated for this door handoff.

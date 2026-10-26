@@ -185,5 +185,51 @@
       }
     },
     "door_status": "Unresolved failure: written owner note explicitly reports duplicates despite the dropdown Pass."
+  },
+  "owner_feedback_round3": {
+    "notes": {
+      "x2-serges": {
+        "title": "1 \u00b7 X2 \u2014 Serges door and intro visuals",
+        "checks": {
+          "platforms": "Pass",
+          "weakpoint": "Deferred",
+          "exit": "Deferred",
+          "ghosts": "Pass",
+          "doors": "Pass",
+          "intro_art": "Fail"
+        },
+        "notes": "As X walks ahead, especially at the door boudnary, you can see a flicker of his own head ando ther parts of his sprite ahead of him. Widescreen X2 has the smae double door isseu we had to ptach in x1. part osf the boss's actual spawn in were missing in pieces at spawn his. part of his seat thing, and the out thiner igtself at start.aa\n\n\nEdit 2: I still am seeing double doors on both sides of the boss corridotr. I should only ever see 1 on each side.  C:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_raWBgY6VDX.png two things, one the front of his mecha thing doesn't fulyl show up initially. number one there's that sort of void area behind him (to be expected but if we could patch that, it'd be wonderful)",
+        "updated_utc": "2026-10-26T21:10:01.565101+00:00"
+      },
+      "x2-rocket": {
+        "title": "2 \u00b7 X2 \u2014 rocket margins",
+        "checks": {
+          "launch": "Pass",
+          "handoff": "Pass",
+          "finish": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "the right half ot the screen has a stale margins issue. stale margins as the rocket taks off too and just things that are generally wrongC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_5yicgakSoQ.png\n\nC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_eyYOzqPq9s.png\n\nmargins are still failing on this. stale margins on boss stage. everything looks awful on the way up on the rocket.",
+        "updated_utc": "2026-10-26T21:11:08.786375+00:00"
+      },
+      "x2-bossrush": {
+        "title": "Optional \u00b7 X2 \u2014 Boss Rush margins",
+        "checks": {
+          "isolation": "Pass",
+          "return": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "yes visually there's wierd stale margins.\n\nfail. ideally we just make it black bars",
+        "updated_utc": "2026-10-26T21:12:09.287303+00:00"
+      }
+    },
+    "engine_pin": "e862e62",
+    "changes": [
+      "X1 room-facing door policy; hidden face overrides dynamic uploads",
+      "reset unsaved renderer history on state loads"
+    ],
+    "validation": "X2 door crossing continuous/load: zero WRAM/pixel differences. X3 opening/crossing/closing: 100 matched native comparison frames, zero unexplained pixel differences.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\feedback3",
+    "owner_acceptance": "Pending; existing failures and caveats remain intact."
   }
 }
