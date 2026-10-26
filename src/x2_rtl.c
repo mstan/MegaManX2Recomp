@@ -597,6 +597,14 @@ static int x2_ws_spawn_stream_margin(void) {
   if (!margin)
     return 0;
 
+  /* Boss Rush packs separate arenas beside one another. The wide frontier
+   * allocates the neighbouring Magna Centipede while X fights Wire Sponge;
+   * his script interferes with that encounter and its return teleporter.
+   * All room records in this stage retain native allocation timing. */
+  unsigned stage = g_ram[0x1fad];
+  if (stage == 0x0c)
+    return 0;
+
   /* Serges' fortress platform ($29:FA19, enemy $61 at X=$0A40) must be
    * allocated after the preceding door has advanced the native camera. An
    * early gutter allocation consumes its level record while the encounter
@@ -605,7 +613,7 @@ static int x2_ws_spawn_stream_margin(void) {
    * vertical sweep. Resident-object visibility and rendering stay wide. */
   unsigned extra = (unsigned)((margin + 31) & ~31);
   unsigned camera = g_ram[0x1e5d] | (unsigned)g_ram[0x1e5e] << 8;
-  if (g_ram[0x1fad] == 0x0a && camera <= 0x0a40 &&
+  if (stage == 0x0a && camera <= 0x0a40 &&
       camera + 0x100u + extra >= 0x0a40)
     return 0;
   return margin;

@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-26",
+  "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
+  "framework_head": "f68aa0fe8edae75cbc7d4b9473c71687b45ce702",
+  "related_x1_history": ["e2145e9b4eb4fa417462daac162692919933ab22", "832b1bbcb861c4847d7f3a5866c1f37d2758c9ae"],
+  "problem": "The widened dynamic-record frontier consumes Serges' record before the fortress door/camera handoff, leaving an empty room. In Boss Rush it also allocates Magna Centipede beside Wire Sponge; the neighbouring script interferes with Wire Sponge and prevents the rematch return. Matched native-width controls retain Serges and keep the rematch isolated.",
+  "change": "Retain native dynamic-record timing throughout packed Boss Rush stage12, and over the live, aspect-dependent look-ahead interval reaching Serges at worldX0A40 in stage10. Keep resident object windows and the renderer widened, including other stages' ordinary enemy look-ahead. Generated and interpreter execution share the guarded frontier helpers.",
+  "reproducer": "tools/test_widescreen_encounters.py --exe <trace-and-instruction-debug-exe> --rom <verified-USA-ROM> --out <new-private-profile> [--framework <framework>] [--encounter serges|bossrush] [--stock | --window 2560x720 --pure]",
+  "checks": [
+    {"configuration": "original native build, widescreen1280x720", "presentation": [342,224], "result": "fails regression: zero Serges actors"},
+    {"configuration": "fixed native build, widescreen1280x720", "presentation": [342,224], "result": "passes: machine and four live cannons"},
+    {"configuration": "fixed pure interpreter, widescreen2560x720", "presentation": [684,224], "result": "passes: machine and four live cannons"},
+    {"configuration": "fixed native build, widescreen disabled", "presentation": [256,224], "result": "passes: machine and four live cannons"},
+    {"configuration": "matched342px native-spawn diagnostic control versus fixed build", "result": "presented pixels match exactly at the approach checkpoint; no strict full-WRAM equality claim"},
+    {"configuration": "assisted fixed-build Serges fight", "result": "moving platforms, four cannon destruction transitions and exposed Serges AI/death states observed; complete stage exit remains for focused human replay because the aiming assist put X above spikes"},
+    {"configuration": "original build, Boss Rush Wire Sponge,342px", "result": "fails isolation regression: both Wire Sponge and neighbouring Magna Centipede are active; no rematch return"},
+    {"configuration": "combined fixed native build, Boss Rush Wire Sponge,342px", "result": "passes isolation, real-projectile defeat, native rematch bit02 and return to hub checkpoint1"},
+    {"configuration": "combined fixed pure interpreter, Boss Rush Wire Sponge,684px", "result": "passes isolation, real-projectile defeat, native rematch bit02 and return to hub checkpoint1"},
+    {"configuration": "combined fixed native build, all eight rematch rooms,342px", "result": "all eight pass real-projectile defeat and return to hub checkpoint1, with their respective native1FD9 bits01,02,04,08,10,20,40,80; result flags are never edited"},
+    {"configuration": "combined fixed native build, Serges,342px", "result": "passes machine and four live cannon regression after the Boss Rush fix"}
+  ],
+  "assists": ["isolated disposable profiles and dummy audio/video", "original full graphics/checkpoint loader selected through instruction stop009FE9", "intro prerequisite/control-state bypass", "player health refills", "for later combat only: invulnerability, aiming teleports, reduced enemy health and Silk Shot loadout"],
+  "not_claimed": ["unassisted stage completion", "all stages/sublevels certified", "built performance measured by instrumented stepping", "owner visual acceptance or release approval"],
+  "private_evidence": "G:/Temp/Codex/mmx23-trigger-audit-20261026",
+  "tracking": "beads-8wg.18.3"
+}

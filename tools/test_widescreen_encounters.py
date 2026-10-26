@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Replay the original Serges approach in an isolated, muted trace build.
+"""Replay original fortress encounters in an isolated, muted trace build.
 
 Requires SNESRECOMP_ENABLE_TRACE=ON and SNESRECOMP_REVERSE_DEBUG=ON.
-The only progression assists bypass the unfinished introduction and select
-the original stage/checkpoint loader. The test never writes encounter actors,
-level-record live flags, arena limits, boss health, or defeat/progression flags.
+Progression assists bypass the unfinished introduction and select the original
+stage/checkpoint loader. Entry checks never write encounter actors, level-record
+live flags or arena limits. The Boss Rush combat check reduces health before
+actual projectile damage; it never writes the rematch result or return state.
 """
 from __future__ import annotations
 
@@ -29,6 +30,7 @@ def main():
     ap.add_argument('--framework', type=Path,
                     default=Path(__file__).resolve().parents[1] / 'snesrecomp')
     ap.add_argument('--stock', action='store_true')
+    ap.add_argument('--encounter', choices=('serges', 'bossrush'), default='serges')
     ap.add_argument('--window', default='1280x720')
     ap.add_argument('--pure', action='store_true',
                     help='Use the interpreter without native dispatch bounces')
@@ -71,8 +73,9 @@ def main():
         env.update(SNESRECOMP_EXECUTION_MODE='off', SNESRECOMP_LLE_BOUNCE='0')
     result = {'source_executable': str(exe), 'stock': args.stock,
               'window': args.window, 'pure': args.pure, 'passed': False,
+              'encounter': args.encounter,
               'assists': ['bypass interrupted intro control state',
-                          'select original fortress stage 10/checkpoint 1',
+                          'select original fortress stage/checkpoint loader',
                           'refill player health during approach']}
     client = DebugClient(port, timeout=20)
     driver = None
@@ -102,8 +105,14 @@ def main():
             driver.write(0x1f00, bytes(0x50))
             driver.byte(0x1faf, 0x40)
             driver.byte(0x1fd2, 1)
+            stage, variant, checkpoint = (10, 1, 1) if args.encounter == 'serges' else (12, 3, 3)
+            result.update(stage=stage, checkpoint=checkpoint)
+            if args.encounter == 'bossrush':
+                for address in range(0x1fba, 0x1fca, 2):
+                    driver.word(address, 0xdc00)
+                result['assists'].append('eight prior Mavericks marked complete as rematch prerequisites; rematch result flags untouched')
             driver.command('break_add 009fe9')
-            for address, value in ((0x1fad, 10), (0x1fae, 1), (0x1ebf, 1),
+            for address, value in ((0x1fad, stage), (0x1fae, variant), (0x1ebf, 1),
                                    (0x1fb2, 0), (0xd0, 2), (0xd1, 2),
                                    (0xd2, 4), (0xd3, 0)):
                 driver.byte(address, value)
@@ -117,35 +126,63 @@ def main():
                     raise TimeoutError('Original loader instruction stop was not reached')
                 time.sleep(.02)
             assert int(parked['pc'], 16) == 0x9fe9, parked
-            driver.byte(0x1fb4, 1)
+            driver.byte(0x1fb4, checkpoint)
             driver.command('break_clear')
             driver.step(1)
             driver.until(0xd1, b'\x04', 3000)
             driver.until(0xd2, b'\x04', 3000)
             driver.step(120)
-            assert driver.byte(0x1fad) == 10 and driver.byte(0x1fb4) == 1
+            assert driver.byte(0x1fad) == stage and driver.byte(0x1fb4) == checkpoint
             for buttons, frames in (('right+y', 240), ('0', 480)):
                 for _ in range(frames // 30):
                     driver.byte(0x9ff, 32)
                     driver.step(30, buttons)
-            driver.command('screenshot serges.bmp')
-            width, height = struct.unpack_from('<ii', (out / 'serges.bmp').read_bytes(), 18)
+            driver.command('screenshot encounter.bmp')
+            width, height = struct.unpack_from('<ii', (out / 'encounter.bmp').read_bytes(), 18)
             result['presentation_size'] = [width, abs(height)]
             assert (width == 256) if args.stock else (width > 256), width
             ram = driver.read(0, 0x20000)
-            (out / 'serges.wram').write_bytes(ram)
+            (out / 'encounter.wram').write_bytes(ram)
             actors = []
             for address in range(0xd18, 0x1518, 0x40):
-                if ram[address] and ram[address + 10] == 0x61:
+                if ram[address]:
                     actors.append({'address': f'{address:04x}',
+                                   'id': ram[address + 10],
                                    'state': ram[address:address + 4].hex(),
                                    'subtype': ram[address + 11],
                                    'health': ram[address + 0x27]})
-            result['serges_actors'] = actors
+            result['actors'] = actors
             result['camera'] = [int.from_bytes(ram[a:a + 2], 'little')
                                 for a in (0x1e5d, 0x1e60)]
-            assert any(a['subtype'] == 0 and a['health'] > 0 for a in actors), actors
-            assert sum(a['subtype'] == 2 and a['health'] > 0 for a in actors) == 4, actors
+            if args.encounter == 'serges':
+                serges = [a for a in actors if a['id'] == 0x61]
+                assert any(a['subtype'] == 0 and a['health'] > 0 for a in serges), actors
+                assert sum(a['subtype'] == 2 and a['health'] > 0 for a in serges) == 4, actors
+            else:
+                assert any(a['id'] == 0x23 and a['health'] > 0 for a in actors), actors
+                boss_ids = {0x1d, 0x1e, 0x23, 0x34, 0x35, 0x38, 0x3b, 0x3c, 0x4b}
+                assert not any(a['id'] in boss_ids - {0x23} for a in actors), actors
+                assert not driver.byte(0x1fd9) & 2
+                result['assists'].append('reduce Wire Sponge health before real projectile damage')
+                for _ in range(36):
+                    if driver.byte(0x1fd9) & 2:
+                        break
+                    for address in range(0xd18, 0x1518, 0x40):
+                        obj = driver.read(address, 0x28)
+                        if obj[0] and obj[1] == 2 and obj[10] == 0x23 and 0 < obj[0x27] < 128:
+                            driver.byte(address + 0x27, 1)
+                            x, y = int.from_bytes(obj[5:7], 'little'), int.from_bytes(obj[8:10], 'little')
+                            driver.word(0x9dd, max(0x318, min(0x3d0, x - 64)))
+                            driver.word(0x9e0, max(0x418, min(0x4d0, y + 14)))
+                    driver.byte(0x9ff, 32)
+                    driver.step(1, 'right')
+                    driver.step(12, 'y')
+                    driver.step(12)
+                driver.step(1200)
+                result['rematch_flags'] = driver.byte(0x1fd9)
+                result['return_checkpoint'] = driver.byte(0x1fb4)
+                driver.command('screenshot returned.bmp')
+                assert result['rematch_flags'] & 2 and result['return_checkpoint'] == 1, result
             result['passed'] = True
     except Exception as error:
         result['error'] = repr(error)
