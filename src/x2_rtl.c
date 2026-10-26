@@ -592,13 +592,32 @@ uint16 X2WsObjWinLimit(uint16 base) {
  * only after entering a widescreen gutter even when their later
  * activation/draw windows are already widened. Keep the stream grid aligned
  * and move it beyond the visible margin plus the same 32-pixel wake slack. */
-static uint16_t x2_ws_spawn_stream_left_extra(void) {
+static int x2_ws_spawn_stream_margin(void) {
   int margin = x2_ws_spawn_margin();
+  if (!margin)
+    return 0;
+
+  /* Serges' fortress platform ($29:FA19, enemy $61 at X=$0A40) must be
+   * allocated after the preceding door has advanced the native camera. An
+   * early gutter allocation consumes its level record while the encounter
+   * is still outside the arena, leaving an empty, locked room. Protect the
+   * complete look-ahead interval at every aspect, including the initial
+   * vertical sweep. Resident-object visibility and rendering stay wide. */
+  unsigned extra = (unsigned)((margin + 31) & ~31);
+  unsigned camera = g_ram[0x1e5d] | (unsigned)g_ram[0x1e5e] << 8;
+  if (g_ram[0x1fad] == 0x0a && camera <= 0x0a40 &&
+      camera + 0x100u + extra >= 0x0a40)
+    return 0;
+  return margin;
+}
+
+static uint16_t x2_ws_spawn_stream_left_extra(void) {
+  int margin = x2_ws_spawn_stream_margin();
   return margin ? (uint16_t)((margin + 31) & ~31) : 0;
 }
 
 static uint16_t x2_ws_spawn_stream_right_extra(void) {
-  int margin = x2_ws_spawn_margin();
+  int margin = x2_ws_spawn_stream_margin();
   /* Round outward, not inward. The slot-3 frog can sit near the far end of
    * its 32-pixel record bucket and needs several initialization frames before
    * it emits OAM; rounding down allocated it at screen X=336 in a 342px view. */
