@@ -284,6 +284,10 @@ void X2ConfigureWsBgMargins(void) {
   Mmx23ConfigureWsBgMargins(g_snes, g_ppu, g_ram, g_ws_active);
 }
 
+bool X2UseNativeFrame(void) {
+  return g_ram[0x1fad] == 12 && g_ram[0xd1] == 4;
+}
+
 /* ── 16:9 object windows (spawn/activation/draw) ──────────────────────────
  *
  * X2's resident section objects ($1818+, world coords at dp$05/$08), plus

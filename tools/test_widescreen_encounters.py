@@ -140,7 +140,11 @@ def main():
             driver.command('screenshot encounter.bmp')
             width, height = struct.unpack_from('<ii', (out / 'encounter.bmp').read_bytes(), 18)
             result['presentation_size'] = [width, abs(height)]
-            assert (width == 256) if args.stock else (width > 256), width
+            # The packed rematch stage intentionally uses native framing:
+            # the owner requested black bars instead of adjacent-room garbage.
+            native_frame = args.stock or args.encounter == 'bossrush'
+            assert (width == 256) if native_frame else (width > 256), width
+            result['native_framing'] = native_frame
             ram = driver.read(0, 0x20000)
             (out / 'encounter.wram').write_bytes(ram)
             actors = []

@@ -98,10 +98,10 @@
     "framework_head": "0ecd2fe07a31119c00371bc1ddbdd0f12d0647af",
     "capture_fix": "Forward-slash paths avoid invalid debug-response JSON; verified PNG plus OAM/VRAM/RAM/state diagnostics. UI now shows preview/errors and captures the loaded segment.",
     "remaining": [
-      "Serges double-door and complete spawn art need human confirmation.",
-      "Factory outside-left BG2 layout is empty; flat gutter remains unresolved.",
-      "Bit/Byte floor placement needs natural-approach comparison; old teleport states do not establish a widescreen defect.",
-      "Final Sigma/endings and independent music/SFX qualification remain unverified."
+      "Bit/Byte floor clipping remains unresolved; before-door entry is verified, not floor correctness.",
+      "X2 Serges duplicate doors, incomplete machine art/void, and rocket ascent/boss margins remain open.",
+      "Factory outer-left empty-source strip remains a known caveat; owner background/pickup passes are accepted.",
+      "Serges full exit, final Sigma/endings and independent audio qualification remain unverified."
     ],
     "owner_notes_preserved": true,
     "scope": "Previous passes accepted individually; this is not full campaign/ending certification.",
@@ -138,13 +138,52 @@
     },
     "changes": [
       "Slots16..22 shift as HUD only when a real boss-bar signature is present; actor pieces stay centered.",
-      "Shared exact margin provider handles world Y above4096 and signed raster scroll, retaining game tilemap writes."
+      "Shared exact margin provider handles world Y above4096 and signed raster scroll, retaining game tilemap writes.",
+      "Owner-requested native framing for packed Boss Rush stage12; normal stages return to widescreen automatically."
     ],
     "validated": [
       "Pure interpreter684: Serges machine and four live cannons.",
       "Pure interpreter684: Boss Rush isolation, actual projectile defeat and original return checkpoint.",
       "Matched boundary replay removes HUD-induced actor fragments; rocket native view remains unchanged.",
-      "Current-build save/load and repeat rendering/RAM checked in private evidence."
-    ]
+      "Current-build save/load and repeat rendering/RAM checked in private evidence.",
+      "Latest pure-interpreter Boss Rush: native256 presentation, isolation, actual projectile defeat and original hub return; ordinary rocket approach remains342 before and after loading the rematch."
+    ],
+    "owner_feedback_round2": {
+      "x2-serges": {
+        "title": "1 \u00b7 X2 \u2014 Serges door and intro visuals",
+        "checks": {
+          "platforms": "Pass",
+          "weakpoint": "Deferred",
+          "exit": "Deferred",
+          "ghosts": "Pass",
+          "doors": "Pass",
+          "intro_art": "Fail"
+        },
+        "notes": "As X walks ahead, especially at the door boudnary, you can see a flicker of his own head ando ther parts of his sprite ahead of him. Widescreen X2 has the smae double door isseu we had to ptach in x1. part osf the boss's actual spawn in were missing in pieces at spawn his. part of his seat thing, and the out thiner igtself at start.aa\n\n\nEdit 2: I still am seeing double doors on both sides of the boss corridotr. I should only ever see 1 on each side.  C:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_raWBgY6VDX.png two things, one the front of his mecha thing doesn't fulyl show up initially. number one there's that sort of void area behind him (to be expected but if we could patch that, it'd be wonderful)",
+        "updated_utc": "2026-10-26T21:10:01.565101+00:00"
+      },
+      "x2-rocket": {
+        "title": "2 \u00b7 X2 \u2014 rocket margins",
+        "checks": {
+          "launch": "Pass",
+          "handoff": "Pass",
+          "finish": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "the right half ot the screen has a stale margins issue. stale margins as the rocket taks off too and just things that are generally wrongC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_5yicgakSoQ.png\n\nC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_eyYOzqPq9s.png\n\nmargins are still failing on this. stale margins on boss stage. everything looks awful on the way up on the rocket.",
+        "updated_utc": "2026-10-26T21:11:08.786375+00:00"
+      },
+      "x2-bossrush": {
+        "title": "Optional \u00b7 X2 \u2014 Boss Rush margins",
+        "checks": {
+          "isolation": "Pass",
+          "return": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "yes visually there's wierd stale margins.\n\nfail. ideally we just make it black bars",
+        "updated_utc": "2026-10-26T21:12:09.287303+00:00"
+      }
+    },
+    "door_status": "Unresolved failure: written owner note explicitly reports duplicates despite the dropdown Pass."
   }
 }

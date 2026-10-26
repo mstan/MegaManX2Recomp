@@ -26,7 +26,8 @@
   "# See docs/WIDESCREEN.md for surveyed systems and remaining work.\n"
 
 #define MmxDisplayViewport X2DisplayViewport
-#define MmxDisplay_ComputeFrameWidth X2Display_ComputeFrameWidth
+#define MmxDisplay_ComputeFrameWidth(dw, dh, wide) \
+  X2Display_ComputeFrameWidth(dw, dh, (wide) && !X2UseNativeFrame())
 #define MmxDisplay_ComputeViewport X2Display_ComputeViewport
 #define MmxDisplay_GetWindowBaseWidth X2Display_GetWindowBaseWidth
 #define MmxDisplay_GetWindowBaseHeight X2Display_GetWindowBaseHeight
