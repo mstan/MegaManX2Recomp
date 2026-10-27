@@ -5,17 +5,16 @@
       "Rocket/ascent",
       "Serges backdrop/weakpoint/full exit",
       "Boss Rush bars",
-      "Single doors"
-    ],
-    "pending_visual": [
-      "Serges entering front",
+      "Single doors",
+      "Serges complete entry/no backdrop pop-in",
       "Ostrich entrance bars",
-      "New Sigma arena wall extension"
+      "Sigma walls",
+      "Final X2 owner playtest: entirely passes"
     ],
+    "pending_visual": [],
     "qualified_mechanics": "Cumulative rematches, original final-stage entry, both Zero-room branches and native Sigma handoff; both Sigma forms and ending. Travel, collection and combat assists remain explicit.",
     "remaining": [
-      "Remaining full content and independent audio coverage",
-      "Focused owner visuals and broader-consumer follow-up; current X2/X3 new-base automation, startup/memory and matched runtime are qualified"
+      "Release0.1.5 packaging/runtime gate; cumulative content/reference/audio caveats remain documented as scope limits, not unresolved reported X2 defects. Broader shared-engine consumer follow-up is separate."
     ],
     "new_main_automated_gate": "Passed for current X2/X3: full images/WRAM, scalar/native game PCM+SPC, current save/Capture and matched runtime/startup/memory. Human/content/ending and broader-consumer caveats remain.",
     "current_owner_build": {
@@ -32,7 +31,14 @@
       "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
       "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
       "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-package.json",
-      "promotion": "Qualified; prepared owner replacement pending inactive-process guard"
+      "promotion": "Published and fully cleared by owner; release0.1.5 authorized"
+    },
+    "owner_playtest": {
+      "passed": true,
+      "at": "2026-10-27T22:16:01.851576+00:00",
+      "message": "x2 now passes entirely.",
+      "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+      "release_requested": true
     }
   },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
@@ -1029,14 +1035,13 @@
     },
     "owner_acceptance": {
       "accepted": [
-        "Ostrich entry bars",
-        "X2 Sigma side walls"
+        "All X2 owner visual/playtest checks"
       ],
       "pending": [
-        "Serges entry pop-in quick visual",
         "X3 Kaiser walls/optional actual finishing hit"
       ],
-      "record": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\review-acceptance.json"
+      "record": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\review-acceptance.json",
+      "message": "x2 now passes entirely."
     },
     "limitations": "Approach presentation fix only, not a new full-stage/full-game combat or independent original-game audio qualification. Existing individual passes and earlier binary-specific evidence remain. No merge/release."
   }

@@ -384,3 +384,12 @@ state difference or persistent native-picture regression was observed.
 Only Serges needs the focused visual recheck. Previously accepted checks
 remain closed; Kaiser and broader content/audio/consumer gaps remain
 separate. No merge, release or full-sweep completion is claimed.
+
+### Owner clearance and release handoff (2026-10-27)
+
+The owner confirmed "x2 now passes entirely" on buildf59186d3 after the
+Serges approach fix, and requested the X2 release and a move to X3.
+All X2 individual visual checks are accepted; do not present them again.
+Release0.1.5 uses the qualified game/engine sources with production trace
+and instruction-debugger instrumentation disabled. The packaged runtime
+and dependency checks are recorded separately from the diagnostic build.
