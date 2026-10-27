@@ -253,6 +253,19 @@
     "original_reference": "Unmodified Snes9x arena checkpoint3 is valid. Two early rocket-reference preparation attempts died and are explicitly excluded; no original-game rocket comparison is claimed.",
     "owner_visual_acceptance": "Pending the next bundled focused validation; previous Byte/doors and factory passes remain accepted.",
     "next_priority": "Serges incomplete entrance/mecha art and void/background boundary",
-    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown",
+    "second_priority": {
+      "engine": "7106efd183f9781000a4e3c2b2ab7b42f55a921e",
+      "change": "Continue only BG1 beyond Serges authored right boundary0B80 while the original camera is locked and the machine is resident; native VRAM, real left scenery/door, BG2 and OAM are retained.",
+      "checks": [
+        "Hybrid342, hybrid684 and interpreter684:21 replay samples each; only right gutter pixels change; all native/left pixels and full WRAM/VRAM match previous build",
+        "Current-build save/load: zero RAM/pixel differences at342 and684",
+        "Load ascent before/after Serges: identical output, room option clears",
+        "Production source/native/upload/left/reset fixtures pass",
+        "Shared default-zero X3 Byte420-frame replay: full presented pixels and WRAM unchanged"
+      ],
+      "open": "Missing entrance/seat artwork remains failed owner observation pending focused replay. Background extension and rocket margins await owner visual acceptance; no repeat Byte/door handoff.",
+      "next": "Actual Serges defeat/exit, remaining fortress branches and final Sigma/endings; full stage/sublevel inventory and independent music/SFX remain incomplete."
+    }
   }
 }

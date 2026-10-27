@@ -293,3 +293,21 @@ shared update also preserves accepted X3 factory and Byte pixels/RAM.
 Original-ROM arena reference is valid; failed rocket-reference preparation
 is excluded. Owner visual confirmation is pending a bundled handoff. Serges
 entrance/mecha artwork remains the next open priority.
+
+## Serges right boundary (2026-10-26)
+
+Continue the authored BG1 wall/spike backdrop beyond world X0B80 while the
+stage10 machine is resident and the original camera is locked at X0A80.
+This is a right-gutter source substitution. It preserves native VRAM and
+the actual left scenery/door, including at684px; BG2 and OAM are unchanged.
+
+Replays at hybrid342, hybrid684 and interpreter684 match the previous build
+in all native/left pixels and full WRAM/VRAM across21 samples each. Only the
+right gutter changes. Save/load reproduces RAM and pixels; a rocket state
+loaded before and after this room produces identical pixels, confirming
+the room selection clears. Production source/precedence tests also pass.
+
+The owner's missing entrance/seat-art observation stays open. OAM presence
+does not establish visual correctness. A focused current-build entrance
+setup on a live platform is being prepared for that check; accepted door,
+platform and ghost checks do not need repeating.
