@@ -360,3 +360,27 @@ Pause/Capture/restart checks pass. Timing samples are small and mixed,
 neutral/inconclusive. Actual trace is FULL despite SMALL in the cache.
 Owner observations and the same pending segments are preserved; this
 does not relabel earlier boss/ending proofs as a new full sweep.
+
+### Serges backdrop before the camera lock (2026-10-27)
+
+The owner accepted Ostrich entry bars and X2 Sigma walls, but observed
+a brief right-side void before Serges enters. The room extension now
+uses the original camera limit and resident machine during the approach,
+so its backdrop is present before the live camera reaches the lock.
+
+Buildf59186d3 / codeaa07437 passes424 paired picture/WRAM/VRAM/OAM
+samples across native256/default,342/default,684/default and684/interpreter.
+Every initial approach frame through90 is checked, followed by entrance
+samples through240. Native and left scenery stay exact; the settled
+accepted room stays exact in the full output. Retained pre-lock pictures
+show the continued wall/spikes instead of the baseline void.
+
+Rocket, Ostrich and Sigma full-output/WRAM replays and the fresh Serges
+save/load/Pause/Capture/restart pass. The screenshot API copies the most
+recent presentation, so the one initial stale-buffer comparison is
+excluded and repeated at the same stopped simulation frame. No guest
+state difference or persistent native-picture regression was observed.
+
+Only Serges needs the focused visual recheck. Previously accepted checks
+remain closed; Kaiser and broader content/audio/consumer gaps remain
+separate. No merge, release or full-sweep completion is claimed.

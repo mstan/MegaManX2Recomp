@@ -30,9 +30,9 @@
     },
     "current_package": {
       "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
-      "binary": "209813aa5459bf95355882f991b09bab1821e856c67a6619bc335cc0c4cd4169",
-      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-qualification.json",
-      "publication": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-publication.json"
+      "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-package.json",
+      "promotion": "Qualified; prepared owner replacement pending inactive-process guard"
     }
   },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
@@ -938,5 +938,106 @@
     "scope": "Shared engine pin only; X2 game logic/generated code unchanged. This is not a repeat current-binary full-boss sweep or new owner acceptance.",
     "publication": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-publication.json",
     "promotion": "One current executable per owner title, verified replacement/current-build states; settings/native saves/notes/acceptance preserved. Frozen previous binaries remain private evidence. No merge/release."
+  },
+  "serges_approach_followup": {
+    "passed": true,
+    "date": "2026-10-27T22:08:39.768468+00:00",
+    "code_commit": "aa074374f2d0439e026c019775fc15d4310e940e",
+    "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+    "baseline": "209813aa5459bf95355882f991b09bab1821e856c67a6619bc335cc0c4cd4169",
+    "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+    "compiled_source": {
+      "path": "src/x2_rtl.c",
+      "sha256": "8da5f714694c102c73fbcc945b471865c2f8a22cbea6990bee7bbadb471062f4"
+    },
+    "defect": "Owner sees the unextended right void during original camera interpolation into the Serges room, then the backdrop pops in at exactX0A80.",
+    "fix": "Select the existing right-boundary/background-canvas policies from original camera maxX0A80 and resident machine, including the approach; do not wait for the live camera to settle.",
+    "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-qualification.json",
+    "matrix": {
+      "serges-approach-684-default": {
+        "width": 684,
+        "execution": "default hybrid",
+        "samples": 106,
+        "changed_approach_frames": 77
+      },
+      "serges-approach-684-interpreter": {
+        "width": 684,
+        "execution": "interpreter",
+        "samples": 106,
+        "changed_approach_frames": 77
+      },
+      "serges-approach-256-default": {
+        "width": 256,
+        "execution": "default hybrid",
+        "samples": 106,
+        "changed_approach_frames": 0
+      },
+      "serges-approach-342-default": {
+        "width": 342,
+        "execution": "default hybrid",
+        "samples": 106,
+        "changed_approach_frames": 20
+      }
+    },
+    "observed": "Retained normal-width pre-lock frame72 and684 interpreter frame32 show the wall/spikes already continued, where the baseline is void. All sampled native/left pixels,128KiB WRAM,VRAM and OAM match; settled room matches complete output. No RAM/controller writes during these paired approaches.",
+    "regression": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-followup.json",
+      "cases": {
+        "rocket": {
+          "passed": true,
+          "samples": 16
+        },
+        "ostrich": {
+          "passed": true,
+          "samples": 16
+        },
+        "sigma": {
+          "passed": true,
+          "samples": 12
+        }
+      }
+    },
+    "current_state": {
+      "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-owner-current.sav",
+      "sha256": "8415cad8038056e539935b4084c11aff6e67155a7e7927fa25fdf844b8b90c01",
+      "save_replay": {
+        "case": "serges-approach-owner-current",
+        "ram_difference": 0,
+        "pixel_difference": 0,
+        "passed": true
+      },
+      "capture": {
+        "passed": true,
+        "picture": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-capture-check\\review-captures\\x2-serges-20261027-150745-398272.png",
+        "errors": {},
+        "replay": {
+          "case": "serges-approach-owner-capture",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      }
+    },
+    "runtime": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-cost-x2-default.json",
+      "median_time_change_percent": -1.9322421212163765,
+      "range_percent": [
+        -2.462090501045122,
+        0.14902995569412436
+      ],
+      "scope": "Three matched alternating240-frame protocol samples; small shared-host measurements, no optimization claim."
+    },
+    "owner_acceptance": {
+      "accepted": [
+        "Ostrich entry bars",
+        "X2 Sigma side walls"
+      ],
+      "pending": [
+        "Serges entry pop-in quick visual",
+        "X3 Kaiser walls/optional actual finishing hit"
+      ],
+      "record": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\review-acceptance.json"
+    },
+    "limitations": "Approach presentation fix only, not a new full-stage/full-game combat or independent original-game audio qualification. Existing individual passes and earlier binary-specific evidence remain. No merge/release."
   }
 }
