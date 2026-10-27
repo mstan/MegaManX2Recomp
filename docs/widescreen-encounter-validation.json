@@ -1,0 +1,1157 @@
+{
+  "date": "2026-10-26",
+  "current_status": {
+    "accepted": [
+      "Rocket/ascent",
+      "Serges backdrop/weakpoint/full exit",
+      "Boss Rush bars",
+      "Single doors",
+      "Serges complete entry/no backdrop pop-in",
+      "Ostrich entrance bars",
+      "Sigma walls",
+      "Final X2 owner playtest: entirely passes"
+    ],
+    "pending_visual": [],
+    "qualified_mechanics": "Cumulative rematches, original final-stage entry, both Zero-room branches and native Sigma handoff; both Sigma forms and ending. Travel, collection and combat assists remain explicit.",
+    "remaining": [
+      "No unresolved owner-reported X2 defects or human checks. Publishing0.1.5; independent exhaustive reference/audio comparisons and broader engine consumer coverage remain documented scope limits."
+    ],
+    "new_main_automated_gate": "Passed for current X2/X3: full images/WRAM, scalar/native game PCM+SPC, current save/Capture and matched runtime/startup/memory. Human/content/ending and broader-consumer caveats remain.",
+    "current_owner_build": {
+      "sha256": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+      "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+      "title_code": "aa074374f2d0439e026c019775fc15d4310e940e",
+      "owner_approved": true,
+      "source": "serges_approach_followup"
+    },
+    "current_package": {
+      "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+      "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-package.json",
+      "promotion": "Published and fully cleared by owner; release0.1.5 authorized"
+    },
+    "owner_playtest": {
+      "passed": true,
+      "at": "2026-10-27T22:16:01.851576+00:00",
+      "message": "x2 now passes entirely.",
+      "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+      "release_requested": true
+    },
+    "released_package": {
+      "version": "0.1.5",
+      "binary": "45894fd5e326e8d48d86729d5456e81cbcc0136b037ab5d15deda2ffe935fb8b",
+      "archive_sha256": "dcfc7bee4e817cff7fd95c315800732ab4cc877df1c5225afd314585eac9494d",
+      "status": "Production gate passed; publication pending"
+    }
+  },
+  "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
+  "framework_head": "b4a4e00fbf37782deb57066fb4c54f8aa587f527",
+  "related_x1_history": [
+    "e2145e9b4eb4fa417462daac162692919933ab22",
+    "832b1bbcb861c4847d7f3a5866c1f37d2758c9ae"
+  ],
+  "problem": "The widened dynamic-record frontier consumes Serges' record before the fortress door/camera handoff, leaving an empty room. In Boss Rush it also allocates Magna Centipede beside Wire Sponge; the neighbouring script interferes with Wire Sponge and prevents the rematch return. Matched native-width controls retain Serges and keep the rematch isolated.",
+  "change": "Retain native dynamic-record timing throughout packed Boss Rush stage12, and over the live, aspect-dependent look-ahead interval reaching Serges at worldX0A40 in stage10. Keep resident object windows and the renderer widened, including other stages' ordinary enemy look-ahead. Generated and interpreter execution share the guarded frontier helpers.",
+  "reproducer": "tools/test_widescreen_encounters.py --exe <trace-and-instruction-debug-exe> --rom <verified-USA-ROM> --out <new-private-profile> [--framework <framework>] [--encounter serges|bossrush] [--stock | --window 2560x720 --pure]",
+  "checks": [
+    {
+      "configuration": "original native build, widescreen1280x720",
+      "presentation": [
+        342,
+        224
+      ],
+      "result": "fails regression: zero Serges actors"
+    },
+    {
+      "configuration": "fixed native build, widescreen1280x720",
+      "presentation": [
+        342,
+        224
+      ],
+      "result": "passes: machine and four live cannons"
+    },
+    {
+      "configuration": "fixed pure interpreter, widescreen2560x720",
+      "presentation": [
+        684,
+        224
+      ],
+      "result": "passes: machine and four live cannons"
+    },
+    {
+      "configuration": "fixed native build, widescreen disabled",
+      "presentation": [
+        256,
+        224
+      ],
+      "result": "passes: machine and four live cannons"
+    },
+    {
+      "configuration": "matched342px native-spawn diagnostic control versus fixed build",
+      "result": "presented pixels match exactly at the approach checkpoint; no strict full-WRAM equality claim"
+    },
+    {
+      "configuration": "assisted fixed-build Serges fight",
+      "result": "moving platforms, four cannon destruction transitions and exposed Serges AI/death states observed; complete stage exit remains for focused human replay because the aiming assist put X above spikes"
+    },
+    {
+      "configuration": "original build, Boss Rush Wire Sponge,342px",
+      "result": "fails isolation regression: both Wire Sponge and neighbouring Magna Centipede are active; no rematch return"
+    },
+    {
+      "configuration": "combined fixed native build, Boss Rush Wire Sponge,342px",
+      "result": "passes isolation, real-projectile defeat, native rematch bit02 and return to hub checkpoint1"
+    },
+    {
+      "configuration": "combined fixed pure interpreter, Boss Rush Wire Sponge,684px",
+      "result": "passes isolation, real-projectile defeat, native rematch bit02 and return to hub checkpoint1"
+    },
+    {
+      "configuration": "combined fixed native build, all eight rematch rooms,342px",
+      "result": "all eight pass real-projectile defeat and return to hub checkpoint1, with their respective native1FD9 bits01,02,04,08,10,20,40,80; result flags are never edited"
+    },
+    {
+      "configuration": "combined fixed native build, Serges,342px",
+      "result": "passes machine and four live cannon regression after the Boss Rush fix"
+    }
+  ],
+  "assists": [
+    "isolated disposable profiles and dummy audio/video",
+    "original full graphics/checkpoint loader selected through instruction stop009FE9",
+    "intro prerequisite/control-state bypass",
+    "player health refills",
+    "for later combat only: invulnerability, aiming teleports, reduced enemy health and Silk Shot loadout"
+  ],
+  "not_claimed": [
+    "unassisted stage completion",
+    "all stages/sublevels certified",
+    "built performance measured by instrumented stepping",
+    "owner visual acceptance or release approval"
+  ],
+  "private_evidence": "G:/Temp/Codex/mmx23-trigger-audit-20261026",
+  "tracking": "beads-8wg.18.3",
+  "release_framework_pin": "f68aa0fe8edae75cbc7d4b9473c71687b45ce702",
+  "framework_provenance": "The checked-out framework tree is identical to the title release pin (git diff is empty).",
+  "runtime_smoke": {
+    "mode": "four-second unthrottled diagnostic builds, dummy video/audio, concurrent host load",
+    "baseline_fps": 259,
+    "candidate_fps": 251,
+    "interpretation": "Both retain ample emulation headroom. These short instrumented samples do not establish statistical performance equivalence or release renderer performance."
+  },
+  "visual_followup": {
+    "framework_head": "0ecd2fe07a31119c00371bc1ddbdd0f12d0647af",
+    "capture_fix": "Forward-slash paths avoid invalid debug-response JSON; verified PNG plus OAM/VRAM/RAM/state diagnostics. UI now shows preview/errors and captures the loaded segment.",
+    "remaining": [
+      "Bit/Byte floor clipping remains unresolved; before-door entry is verified, not floor correctness.",
+      "X2 Serges duplicate doors, incomplete machine art/void, and rocket ascent/boss margins remain open.",
+      "Factory outer-left empty-source strip remains a known caveat; owner background/pickup passes are accepted.",
+      "Serges full exit, final Sigma/endings and independent audio qualification remain unverified."
+    ],
+    "owner_notes_preserved": true,
+    "scope": "Previous passes accepted individually; this is not full campaign/ending certification.",
+    "owner_feedback": {
+      "x2-serges": {
+        "title": "1 \u00b7 X2 \u2014 Serges fortress encounter",
+        "checks": {
+          "platforms": "Pass",
+          "weakpoint": "Deferred",
+          "exit": "Unreviewed"
+        },
+        "notes": "As X walks ahead, especially at the door boudnary, you can see a flicker of his own head ando ther parts of his sprite ahead of him. Widescreen X2 has the smae double door isseu we had to ptach in x1. part osf the boss's actual spawn in were missing in pieces at spawn his. part of his seat thing, and the out thiner igtself at start.aa",
+        "updated_utc": "2026-10-26T18:59:14.330187+00:00"
+      },
+      "x2-rocket": {
+        "title": "2 \u00b7 X2 \u2014 Overdrive Ostrich rocket sequence",
+        "checks": {
+          "launch": "Pass",
+          "handoff": "Pass",
+          "finish": "Pass"
+        },
+        "notes": "the right half ot the screen has a stale margins issue. stale margins as the rocket taks off too and just things that are generally wrong",
+        "updated_utc": "2026-10-26T19:01:02.482641+00:00"
+      },
+      "x2-bossrush": {
+        "title": "Optional \u00b7 X2 \u2014 Wire Sponge rematch isolation",
+        "checks": {
+          "isolation": "Pass",
+          "return": "Pass"
+        },
+        "notes": "yes visually there's wierd stale margins.",
+        "updated_utc": "2026-10-26T19:06:37.170374+00:00"
+      }
+    },
+    "changes": [
+      "Slots16..22 shift as HUD only when a real boss-bar signature is present; actor pieces stay centered.",
+      "Shared exact margin provider handles world Y above4096 and signed raster scroll, retaining game tilemap writes.",
+      "Owner-requested native framing for packed Boss Rush stage12; normal stages return to widescreen automatically."
+    ],
+    "validated": [
+      "Pure interpreter684: Serges machine and four live cannons.",
+      "Pure interpreter684: Boss Rush isolation, actual projectile defeat and original return checkpoint.",
+      "Matched boundary replay removes HUD-induced actor fragments; rocket native view remains unchanged.",
+      "Current-build save/load and repeat rendering/RAM checked in private evidence.",
+      "Latest pure-interpreter Boss Rush: native256 presentation, isolation, actual projectile defeat and original hub return; ordinary rocket approach remains342 before and after loading the rematch."
+    ],
+    "owner_feedback_round2": {
+      "x2-serges": {
+        "title": "1 \u00b7 X2 \u2014 Serges door and intro visuals",
+        "checks": {
+          "platforms": "Pass",
+          "weakpoint": "Deferred",
+          "exit": "Deferred",
+          "ghosts": "Pass",
+          "doors": "Pass",
+          "intro_art": "Fail"
+        },
+        "notes": "As X walks ahead, especially at the door boudnary, you can see a flicker of his own head ando ther parts of his sprite ahead of him. Widescreen X2 has the smae double door isseu we had to ptach in x1. part osf the boss's actual spawn in were missing in pieces at spawn his. part of his seat thing, and the out thiner igtself at start.aa\n\n\nEdit 2: I still am seeing double doors on both sides of the boss corridotr. I should only ever see 1 on each side.  C:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_raWBgY6VDX.png two things, one the front of his mecha thing doesn't fulyl show up initially. number one there's that sort of void area behind him (to be expected but if we could patch that, it'd be wonderful)",
+        "updated_utc": "2026-10-26T21:10:01.565101+00:00"
+      },
+      "x2-rocket": {
+        "title": "2 \u00b7 X2 \u2014 rocket margins",
+        "checks": {
+          "launch": "Pass",
+          "handoff": "Pass",
+          "finish": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "the right half ot the screen has a stale margins issue. stale margins as the rocket taks off too and just things that are generally wrongC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_5yicgakSoQ.png\n\nC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_eyYOzqPq9s.png\n\nmargins are still failing on this. stale margins on boss stage. everything looks awful on the way up on the rocket.",
+        "updated_utc": "2026-10-26T21:11:08.786375+00:00"
+      },
+      "x2-bossrush": {
+        "title": "Optional \u00b7 X2 \u2014 Boss Rush margins",
+        "checks": {
+          "isolation": "Pass",
+          "return": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "yes visually there's wierd stale margins.\n\nfail. ideally we just make it black bars",
+        "updated_utc": "2026-10-26T21:12:09.287303+00:00"
+      }
+    },
+    "door_status": "Unresolved failure: written owner note explicitly reports duplicates despite the dropdown Pass."
+  },
+  "owner_feedback_round3": {
+    "notes": {
+      "x2-serges": {
+        "title": "1 \u00b7 X2 \u2014 Serges door and intro visuals",
+        "checks": {
+          "platforms": "Pass",
+          "weakpoint": "Deferred",
+          "exit": "Deferred",
+          "ghosts": "Pass",
+          "doors": "Pass",
+          "intro_art": "Fail"
+        },
+        "notes": "As X walks ahead, especially at the door boudnary, you can see a flicker of his own head ando ther parts of his sprite ahead of him. Widescreen X2 has the smae double door isseu we had to ptach in x1. part osf the boss's actual spawn in were missing in pieces at spawn his. part of his seat thing, and the out thiner igtself at start.aa\n\n\nEdit 2: I still am seeing double doors on both sides of the boss corridotr. I should only ever see 1 on each side.  C:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_raWBgY6VDX.png two things, one the front of his mecha thing doesn't fulyl show up initially. number one there's that sort of void area behind him (to be expected but if we could patch that, it'd be wonderful)",
+        "updated_utc": "2026-10-26T21:10:01.565101+00:00"
+      },
+      "x2-rocket": {
+        "title": "2 \u00b7 X2 \u2014 rocket margins",
+        "checks": {
+          "launch": "Pass",
+          "handoff": "Pass",
+          "finish": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "the right half ot the screen has a stale margins issue. stale margins as the rocket taks off too and just things that are generally wrongC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_5yicgakSoQ.png\n\nC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_eyYOzqPq9s.png\n\nmargins are still failing on this. stale margins on boss stage. everything looks awful on the way up on the rocket.",
+        "updated_utc": "2026-10-26T21:11:08.786375+00:00"
+      },
+      "x2-bossrush": {
+        "title": "Optional \u00b7 X2 \u2014 Boss Rush margins",
+        "checks": {
+          "isolation": "Pass",
+          "return": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "yes visually there's wierd stale margins.\n\nfail. ideally we just make it black bars",
+        "updated_utc": "2026-10-26T21:12:09.287303+00:00"
+      }
+    },
+    "engine_pin": "e862e62",
+    "changes": [
+      "X1 room-facing door policy; hidden face overrides dynamic uploads",
+      "reset unsaved renderer history on state loads"
+    ],
+    "validation": "X2 door crossing continuous/load: zero WRAM/pixel differences. X3 opening/crossing/closing: 100 matched native comparison frames, zero unexplained pixel differences.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\feedback3",
+    "owner_acceptance": "Pending; existing failures and caveats remain intact."
+  },
+  "priority_burndown": {
+    "engine": "5e88adcb8eae370254c2ed0f6daad82763e02711",
+    "first_priority": "Actual rocket/ascent and boss-arena stale margins",
+    "implementation": [
+      "Allow self-validated uniform terrain while retaining the BG2 object-layer safeguard",
+      "Use512x256 source-map scroll aliases and effective raster/OPT offsets",
+      "Consult the exact source in the mode2 heat-shimmer drawing path",
+      "Reuse X3 OAM-only HUD anchors so X2 BG3 rocket scenery stays intact"
+    ],
+    "validation": [
+      "780-frame actual ascent/control/camera handoff passes hybrid342 and pure684",
+      "Ascent and arena same-width before/after samples have identical128KiB WRAM and64KiB VRAM",
+      "All24 cropped native-view samples match outside relocated HUD; one cross-width arena sample differs only at WRAM scratch10, so full cross-width RAM equality is not claimed",
+      "Current-build save/load: zero RAM/pixel differences in ascent342, arena342 and arena684",
+      "ROM-free selector and actual OPT pixel tests pass;16 inactive-provider mode1/mode2 render digests match HEAD",
+      "X3 accepted factory and Byte routes: full presented pixels and allWRAM match the prior candidate"
+    ],
+    "performance": "Short serial actual software/debug runtime samples: baseline236..249fps, optimized candidate235..256fps, no consistent slowdown. This is headroom evidence, not a statistical release benchmark.",
+    "original_reference": "Unmodified Snes9x arena checkpoint3 is valid. Two early rocket-reference preparation attempts died and are explicitly excluded; no original-game rocket comparison is claimed.",
+    "owner_visual_acceptance": "Pass: owner accepted rocket/ascent visuals in chat; the older failed dropdown is superseded for this check.",
+    "next_priority": "Two follow-up fixes prepared for focused visual confirmation: Serges initial front and Ostrich entrance bars.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown",
+    "second_priority": {
+      "engine": "7106efd183f9781000a4e3c2b2ab7b42f55a921e",
+      "change": "Continue only BG1 beyond Serges authored right boundary0B80 while the original camera is locked and the machine is resident; native VRAM, real left scenery/door, BG2 and OAM are retained.",
+      "checks": [
+        "Hybrid342, hybrid684 and interpreter684:21 replay samples each; only right gutter pixels change; all native/left pixels and full WRAM/VRAM match previous build",
+        "Current-build save/load: zero RAM/pixel differences at342 and684",
+        "Load ascent before/after Serges: identical output, room option clears",
+        "Production source/native/upload/left/reset fixtures pass",
+        "Shared default-zero X3 Byte420-frame replay: full presented pixels and WRAM unchanged"
+      ],
+      "open": "Backdrop, exposed weakpoint and full Serges exit accepted in owner round5. Initial front remained failed; a live BG2 canvas fix is now prepared.",
+      "next": "X2 cumulative rematches, final Sigma forms and ending now qualify with checkpoint/prerequisite bypasses recorded below. Zero/Black Zero approaches, remaining branches/X3 final paths, complete content/audio coverage and current-main integration remain open."
+    },
+    "followup_canvas_fixes": {
+      "engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+      "changes": [
+        "Serges uses the loaded live BG2 source in gutters even before the front reaches the native view; native self-validation and live destruction edits retained",
+        "Ostrich destination arena uses the complete hardware BG2 canvas under its actual raster scroll; rocket ride policy retained"
+      ],
+      "validation": [
+        "Serges342 and interpreter684:30 samples over360frames each; identical native pixels,128KiB WRAM and64KiB VRAM",
+        "Serges current-build save/load: zero RAM/pixel differences at both widths and in the exposed phase; destroyed cannons remain absent",
+        "Ostrich342 and interpreter684:20 samples over300frames each; identical native pixels, full WRAM/VRAM; current-build save/load zero differences",
+        "Actual780-frame rocket ascent/handoff still passes with the arena policy",
+        "Production source fixtures pass sparse canvas, fresh blank uploads, live edits, native mismatch rejection, VRAM fallback/resumption and ordinary-room reset",
+        "Combined X3 Byte420 and factory360 replays: all sampled presented pixels and WRAM match accepted owner build"
+      ],
+      "constraints": "No gameplay/timing/actor/result writes in either fix. Experimental farther-offscreen parent start was rejected because it caused wrap ghosts.",
+      "owner_visual_acceptance": "Pending only Serges front and Ostrich entrance; previously accepted checks are not repeated.",
+      "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
+    }
+  },
+  "owner_feedback_round5": {
+    "at": "2026-10-27T04:32:24.311686+00:00",
+    "message": "rocket is good. at spawn in the ostrich has these lback bars on the right a bit. / done reviewing. serges has an issue on load in with this thing still. background is good.",
+    "accepted": [
+      "Actual rocket/ascent visuals",
+      "Serges right backdrop",
+      "Boss Rush black bars",
+      "Exposed Serges weakpoint and complete stage exit"
+    ],
+    "failed": [
+      "Serges initial front/mecha art",
+      "Ostrich entrance right-edge black rectangles"
+    ],
+    "notes": {
+      "x2-serges": {
+        "title": "2 \u00b7 X2 \u2014 Serges entrance and backdrop",
+        "checks": {
+          "platforms": "Pass",
+          "weakpoint": "Deferred",
+          "exit": "Deferred",
+          "ghosts": "Pass",
+          "doors": "Pass",
+          "intro_art": "Fail",
+          "background": "Pass"
+        },
+        "notes": "front still looks wrong.",
+        "updated_utc": "2026-10-27T04:27:48.639904+00:00"
+      },
+      "x2-rocket": {
+        "title": "1 \u00b7 X2 \u2014 rocket and arena margins",
+        "checks": {
+          "launch": "Pass",
+          "handoff": "Pass",
+          "finish": "Pass",
+          "margins": "Fail"
+        },
+        "notes": "the right half ot the screen has a stale margins issue. stale margins as the rocket taks off too and just things that are generally wrongC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_5yicgakSoQ.png\n\nC:\\Users\\Matthew\\Documents\\ShareX\\Screenshots\\2026-10\\MegaManX2SNESRecomp_eyYOzqPq9s.png\n\nmargins are still failing on this. stale margins on boss stage. everything looks awful on the way up on the rocket.",
+        "updated_utc": "2026-10-27T04:27:15.608466+00:00"
+      },
+      "x3-vile": {
+        "title": "3 \u00b7 X3 \u2014 factory background and pickup",
+        "checks": {
+          "lift": "Pass",
+          "forms": "Pass",
+          "escape": "Pass",
+          "background": "Pass",
+          "pickup": "Pass"
+        },
+        "notes": "background  does all sounds of weird things. wrong color, wrong movement.  a mediu menergy flickersi n and out of place where it doesn't belong .\n\nas a conenience, adding a damage modifier to this testing harness would help accelerate things a lot.",
+        "updated_utc": "2026-10-26T21:11:46.455479+00:00"
+      },
+      "x2-bossrush": {
+        "title": "3 \u00b7 X2 \u2014 Boss Rush black bars",
+        "checks": {
+          "isolation": "Pass",
+          "return": "Pass",
+          "margins": "Fail",
+          "black_bars": "Pass"
+        },
+        "notes": "margins are good",
+        "updated_utc": "2026-10-27T04:28:01.447541+00:00"
+      },
+      "x3-bit": {
+        "title": "4 \u00b7 X3 \u2014 Bit floor: natural approach",
+        "checks": {
+          "dialogue": "Pass",
+          "capture": "Pass",
+          "exit": "Deferred",
+          "floor": "Unreviewed",
+          "door_animation": "Unreviewed"
+        },
+        "notes": "bit shows up below the ground.",
+        "updated_utc": "2026-10-26T21:12:32.770677+00:00"
+      },
+      "x3-byte": {
+        "title": "X3 \u2014 Byte: door animation only",
+        "checks": {
+          "dialogue": "Unreviewed",
+          "grab": "Pass",
+          "exit": "Pass",
+          "floor": "Pass",
+          "doors": "Unreviewed",
+          "door_animation": "Pass",
+          "door_count": "Pass"
+        },
+        "notes": "byte still clips through the ground. the double doors are still there and now they garble when you us them. they're fine at rest though.",
+        "updated_utc": "2026-10-26T23:35:33.473876+00:00",
+        "owner_chat_feedback": {
+          "message": "byte now stands on the floor. there is now single doors. the doors themseelves still garble when opening/closing, but are fine at rest.",
+          "accepted": [
+            "floor",
+            "grab",
+            "exit",
+            "door_count"
+          ],
+          "still_failed_before_round4": "door_animation"
+        }
+      },
+      "x2-serges-exit": {
+        "title": "Optional \u00b7 X2 \u2014 exposed Serges and exit",
+        "checks": {
+          "weakpoint": "Pass",
+          "exit": "Pass"
+        },
+        "notes": "",
+        "updated_utc": "2026-10-27T04:28:31.059277+00:00"
+      }
+    },
+    "screenshot": "C:/Users/Matthew/Documents/ShareX/Screenshots/2026-10/MegaManX2SNESRecomp_11SpYmh5oi.png",
+    "scope": "Individual checks only. No repeat accepted Byte/doors/factory, rocket, backdrop, BossRush bars or Serges exit; remaining fortress/final routes and integration remain open."
+  },
+  "fortress_final_progress": {
+    "gameplay_head": "773cb33a631fb773e1abc3b936ff5df5f5dfd461",
+    "engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+    "executable_sha256": "c5f94dd2c0a5fa9aa4c6cfb3bf566c2a4745f08b27add49646440f9e11443594",
+    "passed": [
+      "All8 rematches cumulatively set original1FD9:00,01,03,07,0F,1F,3F,7F,FF and return to checkpoint1",
+      "Original Sigma hub dialogue, fortress variant3->4, password and normal stage select enter stage5/variant4/checkpoint0",
+      "Original checkpoint4 final shaft, Sigma intro/AI, real projectile defeat, head-form creation and intro pass at342 and pure-interpreter684",
+      "The head accepts a real charged shot after explicit HP assist; original final-clear advances variant4->5 and enters ending mode at both widths",
+      "At342, the ending narrative, cast sequence and Thanks for playing / Presented by CAPCOM screen complete without further input/RAM writes",
+      "Current-build terminal-ending save/load has zero pixel and WRAM differences"
+    ],
+    "bypasses": [
+      "Earlier Maverick weapon eligibility supplied before the rematch audit",
+      "Original full checkpoint loader selects rematches while preserving results; hub entry travel bypassed",
+      "Checkpoint4 skips final-stage approach and Zero/Black Zero branch; these are unverified (historical checkpoint-only gap; now covered separately by zero_approach_followup) (historical checkpoint-only gap; now covered separately by zero_approach_followup)",
+      "Player position/health and boss HP1 assist; real projectile/charged damage, AI, camera, defeat and final-clear logic retained"
+    ],
+    "excluded": [
+      "Checkpoint5 is the earlier X-Hunter briefing, not Zero/final approach; unrelated setup is excluded"
+    ],
+    "remaining": [
+      "Other remaining fortress branches and X3 final/Sigma/ending",
+      "Full stage/sublevel/exit inventory, independent audio and current-main combined integration",
+      "Focused owner confirmation of Serges entering front and Ostrich entrance bars"
+    ],
+    "visual_caveat": "Fixed-arena wall extension now passes automated native-pixel/RAM/VRAM comparisons; owner visual confirmation pending.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
+  },
+  "fixed_arena_followup": {
+    "date": "2026-10-27",
+    "engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+    "source_content_sha256": "de7a0d96792a474437d0ed3adbf59f0633a732daf1e661e030fdbf5b52f11961",
+    "binary_sha256": "009dd3bba45bbed70da503d5494725d4c1e493a246d65a4f14c3c99032a70a71",
+    "change": "Reuse the existing elastic compositor to continue only the outer BG1 wall-edge pixels; preserve the native room1:1 and contain BG2 object canvases within it. No actor, camera, physics, timing or outcome writes.",
+    "selection": "Only the authored fixed Sigma arena bounds, in its normal mode1 background maps. Bounds rather than live scroll retain the policy through camera shake; X2 retains it through final-clear fade. Ordinary scenes reset the frame-local policy.",
+    "validation": {
+      "cases": [
+        "x2-first-arena-342",
+        "x2-first-arena-684",
+        "x2-head-arena-342",
+        "x2-head-arena-684"
+      ],
+      "samples": "30 samples over360 frames per form/width at342 and interpreter684; all native pixels,128KiB WRAM and64KiB VRAM match the prior owner runtime",
+      "save_load": "All4 form/width cases: zero pixel and WRAM differences",
+      "lifecycle": "X2 original final clear and ending handoff: native pixels/WRAM match; ending full output matches. X3 accepted factory scene after arena: full output and WRAM match at684.",
+      "shake": "X2 genuine cameraX3587 while locked bounds remain3584 was rendered and inspected; no camera values injected."
+    },
+    "runtime": {
+      "status": "neutral/inconclusive",
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-arena-runtime.json",
+      "limit": "Short matched serial diagnostic headroom samples are mixed under host/disk load. They establish neither an optimization win nor a reproducible regression; current-main built-runtime gate remains ahead."
+    },
+    "owner_visual_acceptance": "Pending only these new final-arena visuals; prior accepted checks remain accepted.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
+  },
+  "zero_approach_followup": {
+    "problem": "At684px both hybrid and pure interpreter consume the final-stage approach prematurely: camera never locks and the Zero room is empty. The identical342px approach starts the original encounter.",
+    "record": "29:E704, dynamic enemy08 becomes68 in stage5/variant4, worldX0E78",
+    "change": "Reuse the existing native-frontier guard over the complete aspect-dependent approach interval; resident actor visibility stays widened. No actor, camera, control, collection or result flags are changed by the fix.",
+    "engine": "2cb5d796d11ff5273db89266af0d7734d36f8b18 (isolated current-main integration; canonical owner review runtime remains on a4e3066)",
+    "generation": "Supported project recipe regenerated using the combined engine, including title override hooks",
+    "checks": {
+      "zero-hybrid684-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\zero-hybrid684-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "zero-pure684-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\zero-pure684-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "zero-hybrid342-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\zero-hybrid342-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "blackzero-hybrid342-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\blackzero-hybrid342-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "x2-zero-pure684-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-zero-pure684-fixed.json",
+        "sigma_camera": [
+          3584,
+          3328
+        ],
+        "sigma_present": true
+      },
+      "x2-blackzero-pure684-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-blackzero-pure684-fixed.json",
+        "sigma_camera": [
+          3584,
+          3328
+        ],
+        "sigma_present": true
+      }
+    },
+    "branches": [
+      "Uncollected parts: original dialogue/live32HP Zero, explicit HP1 assist, real charged defeat, recovery dialogue, player control, floor opening and native fall to Sigma intro",
+      "Rescued Zero: supply three earlier collection prerequisites before allocation; actual Black Zero/rescue dialogue completes, control returns, original floor/fall reaches Sigma intro"
+    ],
+    "bypasses": [
+      "Earlier final-stage progression/collection prerequisites and ordinary stage travel are bypassed",
+      "Pre-door approach fixture is build-specific; full current-build Sigma-handoff save/load replay passes",
+      "No claim of natural acquisition of all Zero parts or unassisted combat"
+    ],
+    "remaining": [
+      "Serges front/Ostrich bars/Sigma arena visual confirmation",
+      "X3 Kaiser finishing hit and escape/ending",
+      "Remaining fortress/content/audio coverage and final integration/runtime qualification"
+    ],
+    "owner_pin_followup": {
+      "code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "runtime_engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+      "generation_engine": "2cb5d796d11ff5273db89266af0d7734d36f8b18",
+      "sha256": "634563c48280afd18f45604a7d23477eeaa1ef5a9843af4e05ba6ba0a235836e",
+      "passed": [
+        "Hybrid342 and pure684 original Zero entry",
+        "Pure684 original live fight, real charged defeat, recovery and native Sigma handoff",
+        "Rescued branch pure684 entry; full rescued branch qualified separately on current-main",
+        "Serges/rocket/Ostrich full output and128KiB WRAM unchanged",
+        "Current-build Sigma handoff save/load has0pixel/WRAM differences"
+      ],
+      "publication": "One current X2 executable and freshly saved approach states; owner settings/saves/notes preserved; selector left closed"
+    }
+  },
+  "final_combined_engine_followup": {
+    "functional": {
+      "passed": true,
+      "game": "x2",
+      "identities": {
+        "candidate": "e8992d0935f1b8ce20b4a41ad4267d0310dfc84f676a4831aec6367ff2b7d75e",
+        "baseline": "634563c48280afd18f45604a7d23477eeaa1ef5a9843af4e05ba6ba0a235836e"
+      },
+      "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "baseline_engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+      "candidate_engine": "2cb5d796d11ff5273db89266af0d7734d36f8b18",
+      "reused_exact_binary_cases": {
+        "integration-x2-serges.json": true,
+        "integration-x2-rocket.json": true,
+        "integration-x2-ostrich.json": true
+      },
+      "new_cases": {
+        "zero": {
+          "passed": true,
+          "samples": 24
+        },
+        "blackzero": {
+          "passed": true,
+          "samples": 24
+        }
+      },
+      "scope": "Original pre-door Zero/Black Zero entry at interpreter684; actual actor68 presence, complete presented image and128KiB WRAM match at24 samples each. This does not repeat full branch finishes.",
+      "features": {
+        "megaman-x2.enhancement.widescreen/widescreen": true,
+        "snesrecomp.diagnostics.coverage/capture": false
+      }
+    },
+    "current_build_save_load": {
+      "case": "integration-final-x2-current-save",
+      "ram_difference": 0,
+      "pixel_difference": 0,
+      "passed": true
+    },
+    "runtime": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\integration-final-x2-runtime-coverage-off.json",
+      "workload": "Original rocket ascent",
+      "samples": 6,
+      "timed_frames_per_sample": 360,
+      "median_time_change_percent": -7.282246864809511,
+      "paired_range_percent": [
+        -14.055832833494076,
+        -3.7609498125930285
+      ],
+      "median_fps": {
+        "baseline": 215.37201095667967,
+        "candidate": 232.43991773214856
+      },
+      "assessment": "Lower protocol step time in all6 pairs on this one workload; no broad speed claim.",
+      "qualification": "Pure interpreter342/software/dummy output, audio emulation, traceFULL, optional coverage recordingOFF in both. One workload per game; separate earlier coverageON samples are not pooled."
+    },
+    "host": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\integration-final-runtime-host.json",
+    "remaining": [
+      "Pending individual owner visuals and optional Kaiser hit/escape/endings",
+      "Other Lab2 branch and skipped traversal/content/audio",
+      "Representative other-consumer/startup/memory gate"
+    ],
+    "promotion": "One current canonical owner binary per game remains unchanged on enginea4. No merge or release. Selector closed with four focused segments; optional hub assistance retired."
+  },
+  "new_main_qualification": {
+    "status": "automated X2/X3 gate passed",
+    "compiled_engine": "e772aca74d06cef9435df2f34cda1689329b19c4",
+    "reviewed_engine": "0095609940bc3a304da8c70f2dcab79264bbb8ab",
+    "integration": "a99e2fc0b9ff192d3a7302d02409c64e32f7cf24",
+    "base": "5ac4b98e065b668ed77b65fa6342ec296b8b9e23",
+    "exact_source_tree": "396f26717c1bf151b0e110950c5fd5f179c1823a",
+    "source_equivalence": "Compilede772, rebased PR0095609 and integrationa99e2fc have identical complete tracked trees; git diff--exit-code and tree hashes verified. Rebased push guarded with the reviewed908346c remote head.",
+    "components": "Five production PPU fixtures plus native raster ownership/readback, APU scalar/native and CRC byte/slice contracts pass on the new combined source.",
+    "reuse": "Existing beads-8wg.2.154/current5ac qualification for MMX, SMW, Super Metroid and F-Zero is retained separately. No fresh combined all-consumer run is claimed.",
+    "limits": [
+      "Single shared Windows x64 host; muted software/debug protocol costs, not isolated release frame-time benchmarks",
+      "Matched scalar game audio is not independent original-game soundtrack/SFX coverage",
+      "Earlier actual combat/fortress proofs retain their original binary identities; these comparisons do not relabel them"
+    ],
+    "remaining": [
+      "Four focused human visuals and optional Kaiser finishing hit",
+      "Kaiser escape/ending, skipped traversal/content and independent audio",
+      "Broader consumer follow-up using existing campaign evidence"
+    ],
+    "promotion": "One verified current executable per owner title, normal untouched window/audio/input configuration. No merge/release or repeated accepted human handoff.",
+    "game": {
+      "executable": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\integration-build-x2\\MegaManX2SNESRecomp.exe",
+      "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+      "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "compiled_title_repository_head": "8aae8328ba7b7255dbb0afdb90bdfe71dbb51ddf",
+      "package": "Standard title renderer with shared native APU time and SLICE8 CRC; HLE desktop frame staging. These games do not receive the MMX/SM custom native raster consumer package.",
+      "actual_defines": {
+        "APU_NATIVE": 1,
+        "CRC32_SLICES": 8,
+        "AUDIO_TRACE_HISTORY": 2
+      },
+      "functional": {
+        "passed": true,
+        "cases": {
+          "rocket": 52,
+          "serges": 24,
+          "ostrich": 20
+        },
+        "samples": 96,
+        "preserved": "Complete presented image and128KiB WRAM at15-frame samples; original controlled input/health only."
+      },
+      "default_functional": {
+        "passed": true,
+        "cases": {
+          "rocket": 52,
+          "serges": 24,
+          "ostrich": 20,
+          "sigma": 8
+        },
+        "samples": 104
+      },
+      "audio": {
+        "pure": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-rocket-audio.json",
+          "sample_frames": 128162,
+          "rate": 32040,
+          "pcm_sha256": "90311a5216801b10f0092b180712adc26ed943de38cc805419d65cd018927c06",
+          "peak": 25811,
+          "spc_before_after_identical": true,
+          "apu_time_implementation": "NATIVE",
+          "actual_guest_sync_cycles": 0
+        },
+        "default": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-default-audio.json",
+          "sample_frames": 128162,
+          "rate": 32040,
+          "pcm_sha256": "63c550015250acc824b1b91b13aca13cb8a97c536343925f860c6614c785a269",
+          "peak": 26215,
+          "spc_before_after_identical": true,
+          "apu_time_implementation": "NATIVE",
+          "actual_guest_sync_cycles": 0
+        }
+      },
+      "current_build_save_load": {
+        "case": "incoming-main-x2-current",
+        "ram_difference": 0,
+        "pixel_difference": 0,
+        "passed": true
+      },
+      "current_build_capture": {
+        "passed": true,
+        "picture": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-capture-check\\review-captures\\incoming-main-x2-serges-20261027-091349-883449.png",
+        "metadata_errors": {},
+        "replay": {
+          "case": "incoming-main-x2-serges-capture",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        },
+        "progress": {
+          "format": "codex-review-progress-v1",
+          "slot": 1,
+          "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2\\saves\\save1.sav",
+          "sha256": "48dcd4884d8464e711732db863434c508dbb3919cb0afb6a7b280380c1fca2ea",
+          "frame": 3091,
+          "tag": {
+            "segment": "incoming-main-x2-serges",
+            "binary_sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+            "engine": "e772aca74d06cef9435df2f34cda1689329b19c4"
+          },
+          "utc": "2026-10-27T16:13:49.883449+00:00"
+        }
+      },
+      "runtime": {
+        "pure": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-runtime.json",
+          "pairs": 6,
+          "package": "New main5ac/e772: native APU time +SLICE8 CRC, standard title renderer; previous95ad scalar APU +byte CRC. Both HLE desktop frame staging, FULL trace, coverageOFF, pure342 software/dummy video/audio with host volume0.",
+          "configuration": "Matched240-frame original AI workloads, pure interpreter, software/dummy video/audio, unthrottled diagnostic builds; serial alternating order; no input/cheat writes during timed intervals",
+          "median_time_change_percent": -1.8209125503425627,
+          "range_percent": [
+            -4.3939387556863,
+            8.297693861972721
+          ],
+          "minimum_candidate_fps": 218.14947255376367,
+          "assessment": "Neutral/inconclusive: mixed changes within shared-host variation; no proven win or reproducible regression. Profiles and games are not pooled."
+        },
+        "default": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-default-runtime.json",
+          "pairs": 6,
+          "package": "Candidate e772/main5ac native APU time +SLICE8 CRC with standard title renderer; baseline95ad scalar APU +byte CRC, same title and frame staging. Separate from pure-interpreter samples.",
+          "configuration": "Matched240-frame original AI, default hybrid execution, widescreen342, HLE frame staging, FULL trace, optional coverageOFF, software/dummy output with audio emulation and volume0; serial alternating order; no input/cheat writes in timed interval.",
+          "median_time_change_percent": 1.6052165388819484,
+          "range_percent": [
+            -5.777151061086105,
+            10.499135915574076
+          ],
+          "minimum_candidate_fps": 256.38467272612576,
+          "assessment": "Neutral/inconclusive: mixed changes within shared-host variation; no proven win or reproducible regression. Profiles and games are not pooled."
+        }
+      },
+      "resource_costs": {
+        "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-launch-costs.json",
+        "identities": {
+          "candidate": {
+            "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+            "executable_bytes": 139756968
+          },
+          "baseline": {
+            "sha256": "fb2eb8f2e8600eab8ef195276c3412f9f28a7e9f6f64efa0cf1eeefed69a80ba",
+            "executable_bytes": 139746123
+          }
+        },
+        "medians": {
+          "baseline": {
+            "startup_seconds": 0.6580174999544397,
+            "rss": 128569344,
+            "private": 3836600320
+          },
+          "candidate": {
+            "startup_seconds": 0.647736300015822,
+            "rss": 127111168,
+            "private": 3836469248
+          }
+        },
+        "assessment": "Warm debug startup/RSS/private costs effectively unchanged. Approximately3.57GiB private commitment is shared by both diagnostic builds; not a release footprint claim.",
+        "scope": "Startup until first debug-ready frame; protocol/polling overhead included. RSS/private are observed costs, not an isolated cold-start or release benchmark."
+      }
+    },
+    "states": {
+      "x2-serges": {
+        "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-owner-states\\x2-serges.sav",
+        "sha256": "f2a897629475f08ea686454d731abd7311d5b76f09d0d79b451513f631a9de69",
+        "binary": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+        "info": {
+          "frame": 3093,
+          "mode": "0204040000000001",
+          "stage": "0a014000000002010100",
+          "player": "0002000218ce0a40",
+          "x": 2766,
+          "y": 361,
+          "hp": 32,
+          "camera": [
+            2638,
+            256
+          ],
+          "bounds": "800a00010001000a800af8ff0000000000014f0a",
+          "event": "0000000000000000000000000000000000000000000000000100010200010000000000040000000000000000000000000000000000000000000100000000000000000000000000000000000000000000"
+        },
+        "current_build_replay": {
+          "case": "incoming-handoff-x2-serges",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      },
+      "x2-ostrich-entry": {
+        "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-owner-states\\x2-ostrich-entry.sav",
+        "sha256": "3d0b733a03c28b895b7abc6ea63eb504fa03f1b750c56c7862ecdbe9a1af0ed1",
+        "binary": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+        "info": {
+          "frame": 4913,
+          "mode": "0204040000001c12",
+          "stage": "07004000000002010100",
+          "player": "00021e04eaca1700",
+          "x": 6090,
+          "y": 975,
+          "hp": 16,
+          "camera": [
+            6048,
+            792
+          ],
+          "bounds": "001e00001803a017001ef8ff000000000000a017",
+          "event": "000000000000000000000000000000000000000000000000000002020000000000000004000000000000000000000000d810000000000000000100000000000000000000000000000000000000000000"
+        },
+        "current_build_replay": {
+          "case": "incoming-handoff-x2-ostrich-entry",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      },
+      "x2-sigma-walls": {
+        "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-owner-states\\x2-sigma-walls.sav",
+        "sha256": "0ee63c581b2e1b1c1395419663bc8047828f98d171329cbd676aa043792a34f2",
+        "binary": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+        "info": {
+          "frame": 30231,
+          "mode": "0204040000000002",
+          "stage": "05044000000002040100",
+          "player": "00020002b0300e00",
+          "x": 3632,
+          "y": 3503,
+          "hp": 16,
+          "camera": [
+            3584,
+            3328
+          ],
+          "bounds": "000e000d000d000e000ef8ff00000000000d000e",
+          "event": "0000000000000000000000000000000000000000000000000f000502000000180d0000040000000000000000000000000000000000000000000100000000000000000000000035010200010080000000"
+        },
+        "current_build_replay": {
+          "case": "incoming-handoff-x2-sigma-walls",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      }
+    }
+  },
+  "maoh_object_canvas_followup": {
+    "passed": true,
+    "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+    "pin_commit": "83eee195ac258adf44a631265910de8d53a6145d",
+    "binary": "209813aa5459bf95355882f991b09bab1821e856c67a6619bc335cc0c4cd4169",
+    "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-qualification.json",
+    "regression": {
+      "x2-serges": {
+        "passed": true,
+        "samples": 16
+      },
+      "x2-rocket": {
+        "passed": true,
+        "samples": 16
+      },
+      "x2-sigma": {
+        "passed": true,
+        "samples": 8
+      },
+      "x2-ostrich": {
+        "passed": true,
+        "samples": 16
+      }
+    },
+    "audio": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-audio-x2.json",
+      "passed": true,
+      "scope": "Actual non-silent PCM, full SPC/ARAM/DSP/APU and WRAM match the current frozen owner engine009/NATIVE-APU package. New engine057 changes presentation only. Not independent original-game music/SFX correctness."
+    },
+    "runtime": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-cost-x2-default.json",
+      "median_time_change_percent": 1.5533253805994907,
+      "range_percent": [
+        -2.323784461839007,
+        4.358531713722669
+      ],
+      "classification": "neutral/inconclusive: small mixed samples on a busy shared host, not a proven win/regression",
+      "minimum_candidate_fps": 221.35067444226442
+    },
+    "current_handoff": "Same three X2 pending states pass current save/load/Pause/Capture/restart; earlier owner acceptance unchanged",
+    "scope": "Shared engine pin only; X2 game logic/generated code unchanged. This is not a repeat current-binary full-boss sweep or new owner acceptance.",
+    "publication": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-publication.json",
+    "promotion": "One current executable per owner title, verified replacement/current-build states; settings/native saves/notes/acceptance preserved. Frozen previous binaries remain private evidence. No merge/release."
+  },
+  "serges_approach_followup": {
+    "passed": true,
+    "date": "2026-10-27T22:08:39.768468+00:00",
+    "code_commit": "aa074374f2d0439e026c019775fc15d4310e940e",
+    "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+    "baseline": "209813aa5459bf95355882f991b09bab1821e856c67a6619bc335cc0c4cd4169",
+    "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+    "compiled_source": {
+      "path": "src/x2_rtl.c",
+      "sha256": "8da5f714694c102c73fbcc945b471865c2f8a22cbea6990bee7bbadb471062f4"
+    },
+    "defect": "Owner sees the unextended right void during original camera interpolation into the Serges room, then the backdrop pops in at exactX0A80.",
+    "fix": "Select the existing right-boundary/background-canvas policies from original camera maxX0A80 and resident machine, including the approach; do not wait for the live camera to settle.",
+    "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-qualification.json",
+    "matrix": {
+      "serges-approach-684-default": {
+        "width": 684,
+        "execution": "default hybrid",
+        "samples": 106,
+        "changed_approach_frames": 77
+      },
+      "serges-approach-684-interpreter": {
+        "width": 684,
+        "execution": "interpreter",
+        "samples": 106,
+        "changed_approach_frames": 77
+      },
+      "serges-approach-256-default": {
+        "width": 256,
+        "execution": "default hybrid",
+        "samples": 106,
+        "changed_approach_frames": 0
+      },
+      "serges-approach-342-default": {
+        "width": 342,
+        "execution": "default hybrid",
+        "samples": 106,
+        "changed_approach_frames": 20
+      }
+    },
+    "observed": "Retained normal-width pre-lock frame72 and684 interpreter frame32 show the wall/spikes already continued, where the baseline is void. All sampled native/left pixels,128KiB WRAM,VRAM and OAM match; settled room matches complete output. No RAM/controller writes during these paired approaches.",
+    "regression": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-followup.json",
+      "cases": {
+        "rocket": {
+          "passed": true,
+          "samples": 16
+        },
+        "ostrich": {
+          "passed": true,
+          "samples": 16
+        },
+        "sigma": {
+          "passed": true,
+          "samples": 12
+        }
+      }
+    },
+    "current_state": {
+      "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-owner-current.sav",
+      "sha256": "8415cad8038056e539935b4084c11aff6e67155a7e7927fa25fdf844b8b90c01",
+      "save_replay": {
+        "case": "serges-approach-owner-current",
+        "ram_difference": 0,
+        "pixel_difference": 0,
+        "passed": true
+      },
+      "capture": {
+        "passed": true,
+        "picture": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-capture-check\\review-captures\\x2-serges-20261027-150745-398272.png",
+        "errors": {},
+        "replay": {
+          "case": "serges-approach-owner-capture",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      }
+    },
+    "runtime": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\serges-approach-cost-x2-default.json",
+      "median_time_change_percent": -1.9322421212163765,
+      "range_percent": [
+        -2.462090501045122,
+        0.14902995569412436
+      ],
+      "scope": "Three matched alternating240-frame protocol samples; small shared-host measurements, no optimization claim."
+    },
+    "owner_acceptance": {
+      "accepted": [
+        "All X2 owner visual/playtest checks"
+      ],
+      "pending": [
+        "X3 Kaiser walls/optional actual finishing hit"
+      ],
+      "record": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\review-acceptance.json",
+      "message": "x2 now passes entirely."
+    },
+    "limitations": "Approach presentation fix only, not a new full-stage/full-game combat or independent original-game audio qualification. Existing individual passes and earlier binary-specific evidence remain. No merge/release."
+  },
+  "release_v0_1_5": {
+    "passed": true,
+    "date": "2026-10-27T22:29:34.436016+00:00",
+    "version": "0.1.5",
+    "compiled_source_commit": "18112a6691338b0102a1622e1607edfd64bad5a5",
+    "gameplay_fix": "aa074374f2d0439e026c019775fc15d4310e940e",
+    "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+    "ui": "0546fbcb0126bb14bf88d2128b4fe8a4229570a3",
+    "archive": "MegaManX2SNESRecomp-windows-x64-v0.1.5.zip",
+    "archive_sha256": "dcfc7bee4e817cff7fd95c315800732ab4cc877df1c5225afd314585eac9494d",
+    "archive_bytes": 13128270,
+    "binary_sha256": "45894fd5e326e8d48d86729d5456e81cbcc0136b037ab5d15deda2ffe935fb8b",
+    "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-release-qualification.json",
+    "runtime_cases": {
+      "native-serges": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "serges": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "rocket": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "ostrich": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "sigma": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      }
+    },
+    "state_tests": {
+      "passed": true,
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-release-state-tests.log",
+      "sha256": "bb7cb0ccdc8afbc81ffc98d4970a73a8df5251eef4b5183b74d2105a6e0e1442",
+      "scope": "Production-profile real-ROM fixture: full immediate restore, deterministic replay, browser save/bindings, rewind and file load/replay in a fresh process."
+    },
+    "owner_clearance": "x2 now passes entirely; explicit commit/release request. No repeat X2 handoff.",
+    "settings": "Release,NATIVE APU,SLICE8 CRC,TRACE0,REVERSE_DEBUG0,SMALL audio trace; software/dummy/volume0 private QA. Windows-only PATH for each extracted runtime launch. Packaged first-run defaults remain audible and no QA config/mod selection is shipped.",
+    "promotion": "Qualified for authorized v0.1.5 publication; source PR merge/tag and release upload are the remaining release operations",
+    "scope": "Production archive runtime matches approved diagnostic build in full output and128KiB WRAM/VRAM/CGRAM/OAM at representative native/Serges/rocket/Ostrich/Sigma scene points. Assisted build-specific setup snapshots and player health only; no result writes. This is packaging/diagnostic-removal verification, not a repeat human playtest or complete stage audit."
+  }
+}

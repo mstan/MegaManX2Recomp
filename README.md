@@ -22,12 +22,14 @@ and the launcher, so headered dumps verify against the same digest.
 
 ## Status
 
-**Boots to its intro cutscenes.** Verified by screenshot through the debug
-surface: the opening story scenes render with correct BG layers, sprites,
-palettes and text, and advance between scenes.
+**Playable Windows release.** Version 0.1.5 includes the completed X2
+widescreen playtest fixes for the rocket/ascent, Serges entrance, Ostrich
+arena, Sigma walls, room-facing doors and HUD placement. Assisted checks
+exercise the original boss transitions, both Zero-room branches and ending;
+the owner has cleared the X2 visual playtest.
 
-Still open: broad gameplay/oracle coverage, audio verification, and the
-stage-specific widescreen defects recorded in `docs/OAM_SURVEY.md`.
+See [the widescreen audit](docs/WIDESCREEN.md) for the tested sequences,
+declared cheats and remaining limits of the reference comparisons.
 
 This project was stood up from the MegamanXRecomp host layer; every Mega Man
 X 1 specific finding (the fiber task scheduler, the BG2 widescreen shadow, the

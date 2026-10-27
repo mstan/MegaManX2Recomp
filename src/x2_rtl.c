@@ -28,6 +28,7 @@
 #include "snes/ppu.h"
 #include "snes/saveload.h"
 #include "snes/ws_shadow.h"
+#include "snes/mmx23_background.h"
 #include "types.h"
 #include "widescreen.h"
 
@@ -204,8 +205,7 @@ void RunOneFrameOfGame(void) {
  * sides move by the same margin and stay symmetric at any width.
  */
 enum {
-  kX2HudSlotFirst = 0,        /* HP / weapon / boss all live in 0..23 */
-  kX2HudSlotCount = 24,       /* slot 24 onward is actors            */
+  kX2HudSlotFirst = 0,        /* HP / weapon occupy 0..15 */
   kX2HudBandHeight = 96,      /* measured HUD Y extent is 0..80       */
   kX2HudLeftEnd = 64,         /* HP X=8 and weapon X=24 are below this */
   kX2HudRightStart = 192,     /* boss X=232 is at/above this          */
@@ -251,301 +251,92 @@ static int x2_ws_hud_present(void) {
   return frame_slots >= 4u;
 }
 
+static bool x2_ws_boss_hud_present(void) {
+  unsigned matches=0;
+  for (unsigned slot=16; slot<23; ++slot) {
+    unsigned w=slot*2;
+    unsigned x=g_ppu->oam[w]&255, y=g_ppu->oam[w]>>8;
+    unsigned attr=g_ppu->oam[w+1]>>8;
+    unsigned xhi=(g_ppu->highOam[slot>>2]>>((slot&3)*2))&1;
+    matches += x==232 && !xhi && attr==0x34 && y<kX2HudBandHeight;
+  }
+  return matches>=4;
+}
+
 /* Call once per frame from the host's frame-prep, after g_ws_extra is known. */
 void X2ConfigureWsHud(void) {
   extern bool g_ws_active;
   if (!g_ppu) return;
+  /* X2's bars are sprites. BG3 carries the rocket scenery/masks, so shifting
+   * its top corners as HUD creates black rectangles inside the native view.
+   * Use the same independent OAM anchor already used by X3. */
+  PpuSetWidescreenHudSplit(g_ppu, 0, 0, 0);
   if (!g_ws_active || !x2_ws_hud_present()) {
+    PpuSetWsHudOamShiftRange2(g_ppu, 0, 0);
     PpuSetWsHudOamShiftRange(g_ppu, 0, 0);   /* off = authentic placement */
-    PpuSetWidescreenHudSplit(g_ppu, 0, 0, 0);
     return;
   }
-  PpuSetWidescreenHudSplit(g_ppu, kX2HudBandHeight,
+  PpuSetWsHudOamBand(g_ppu, kX2HudBandHeight,
                            kX2HudLeftEnd, kX2HudRightStart);
-  PpuSetWsHudOamShiftRange(g_ppu, kX2HudSlotFirst,
-                           kX2HudSlotCount);
+  PpuSetWsHudOamShiftRange(g_ppu, kX2HudSlotFirst, 16);
+  PpuSetWsHudOamShiftRange2(g_ppu, 16, x2_ws_boss_hud_present() ? 7 : 0);
 }
 
-/* ── 16:9 BG margins: exact fill from the game's own level structures ─────
- *
- * Mega Man X2 streams both BG tilemaps a metatile column at a time, so the
- * 64x32 map only holds ~256px of fresh content around the camera and a
- * widescreen gutter reads whatever the other map half last held — a stale
- * section (docs/OAM_SURVEY.md, "Background layer survey"). History cannot
- * cover the LEADING gutter (those columns were never displayed), and
- * edge-repeat smears were owner-rejected. So instead: recompute the exact
- * tilemap entry for any world position the same way the game's own column
- * composer does. Decoded from ROM $00:B449 (composer) + $00:B78E (address/
- * layout derivation), verified 100.000% against live frame VRAM on both
- * layers before this was written:
- *
- *   screen id = layout[((wy>>8)&$1F)*32 + ((wx>>8)&$1F)]     1B/256px screen
- *   block id  = screenDefs[sid*512 + ((wy>>4)&$F)*$20 + ((wx>>4)&$F)*2]
- *   entry     = metatileTable[block*8 + ((wy>>3)&1)*4 + ((wx>>3)&1)*2]
- *               (ROM, 4 words TL,TR,BL,BR; 16-bit address wrap, bank fixed)
- *
- * Per-layer sources (the game loads these into its shared $1FDE-$1FEF
- * compose cluster via $00:B7CC / $00:B803):
- *
- *          layout     screenDefs   metatile ptr    world anchor
- *   BG1    $7E:E800   $7E:2800     24-bit [$09C5]  $1E5D / $1E60
- *   BG2    $7E:EC00   $7E:A600     24-bit [$09C8]  $1E9D / $1EA0
- *
- * Everything is read from WRAM + ROM at frame-prep time: presentation only,
- * zero simulation impact, and the native 256px region is structurally
- * untouched (WsShadowTile early-returns for screen X 0..255).
- *
- * Self-validating gate: each frame the resolver must reproduce a spread of
- * tiles from the live NATIVE view before it may paint gutters. Menus,
- * cutscenes, mode changes and mid-staging frames all fail the comparison
- * and fall back to the authentic map wrap for that frame — no WRAM
- * game-state byte to trust, fails safe by construction.
- */
-typedef struct X2BgStream {
-  uint16_t layoutBase;  /* screen-id layout window, bank $7E        */
-  uint16_t screenDefs;  /* 16x16 block-id maps, 512B/screen, bank $7E */
-  uint16_t mtPtrAddr;   /* WRAM address of 24-bit metatile table ptr */
-  uint16_t worldXAddr;  /* stream-struct world anchor (16-bit)       */
-  uint16_t worldYAddr;
-  uint8_t bgsc;         /* expected BGnSC value: map base + 64x32    */
-  uint16_t mapBaseWord; /* VRAM word base, for native self-validation */
-} X2BgStream;
-
-static const X2BgStream kX2BgStreams[2] = {
-    {0xE800, 0x2800, 0x09C5, 0x1E5D, 0x1E60, 0x51, 0x5000}, /* BG1 */
-    {0xEC00, 0xA600, 0x09C8, 0x1E9D, 0x1EA0, 0x59, 0x5800}, /* BG2 */
-};
-
-static uint16_t x2_wram16(uint32_t addr) {
-  return (uint16_t)(g_ram[addr] | (g_ram[addr + 1] << 8));
-}
-
-/* Exact tilemap entry for world pixel (px, py), via the game's own walk. */
-static uint16_t x2_bg_world_tile(const X2BgStream *s, uint32_t px,
-                                 uint32_t py) {
-  uint32_t li = (((py >> 8) & 0x1F) << 5) | ((px >> 8) & 0x1F);
-  uint8_t sid = g_ram[s->layoutBase + li];
-  uint16_t ba = (uint16_t)(s->screenDefs + sid * 512u +
-                           ((py >> 4) & 0xF) * 0x20u + ((px >> 4) & 0xF) * 2u);
-  uint16_t block = (uint16_t)(g_ram[ba] | (g_ram[(uint16_t)(ba + 1)] << 8));
-  uint16_t mt_addr = x2_wram16(s->mtPtrAddr);
-  uint8_t mt_bank = g_ram[s->mtPtrAddr + 2];
-  /* 16-bit wrap with a fixed bank replicates the guest's LDA [$1C] walk
-   * ($00:B4EE), whose pointer arithmetic never carries into the bank. */
-  uint16_t a = (uint16_t)(mt_addr + block * 8u + (((py >> 3) & 1u) << 2) +
-                          (((px >> 3) & 1u) << 1));
-  return (uint16_t)(cart_read(g_snes->cart, mt_bank, a) |
-                    (cart_read(g_snes->cart, mt_bank, (uint16_t)(a + 1))
-                     << 8));
-}
-
-/* VRAM word address the 64x32 map stores world pixel (px, py) at. */
-static uint16_t x2_bg_vram_word(const X2BgStream *s, uint32_t px,
-                                uint32_t py) {
-  uint32_t tx = px >> 3, ty = py >> 3;
-  return (uint16_t)(s->mapBaseWord + ((tx >> 5) & 1u) * 0x400u +
-                    (ty & 0x1F) * 0x20u + (tx & 0x1F));
-}
-
-/* The resolver must reproduce the live native view to earn the gutters. */
-static bool x2_bg_stream_valid(const X2BgStream *s, int32_t wx, int32_t wy) {
-  if (wx < 0 || wy < 0)
-    return false;
-  /* Boot/menu frames can already have the gameplay BG mode/map bases while
-   * the stream-source cluster is still zero. Reject before cart_read so an
-   * uninitialized pointer cannot create a false off-rails diagnostic. */
-  if (x2_wram16(s->mtPtrAddr) < 0x8000)
-    return false;
-  int miss = 0, modal = 0;
-  uint16_t modal_tile = 0;
-  uint16_t got_v[12];
-  for (int i = 0; i < 12; i++) {
-    uint32_t px = (uint32_t)wx + 10u + (uint32_t)i * 20u;        /* 10..230 */
-    uint32_t py = (uint32_t)wy + 12u + (uint32_t)(i % 6) * 36u;  /* 12..192 */
-    uint16_t want = x2_bg_world_tile(s, px, py);
-    uint16_t got = g_ppu->vram[x2_bg_vram_word(s, px, py) & 0x7FFF];
-    got_v[i] = got;
-    if (want != got)
-      miss++;
-  }
-  /* One mismatch tolerated: a single in-flight column upload must not
-   * flicker the margins off for a frame. Two or more = not our scene. */
-  if (miss > 1)
-    return false;
-  /* Diversity: a near-uniform native sample proves nothing — some scenes
-   * repurpose BG2 as a mostly-transparent OBJECT layer (X-Hunter tower
-   * lifts live in the BG2 map and move by scroll). There the provider's
-   * "level data" is all blank, matches trivially, and would erase the
-   * object in the gutters (owner-reported half-culled platforms). Require
-   * real structure in the view; otherwise authentic map wrap serves the
-   * object correctly. */
-  for (int i = 0; i < 12; i++) {
-    int same = 0;
-    for (int j = 0; j < 12; j++)
-      same += (got_v[j] == got_v[i]);
-    if (same > modal) {
-      modal = same;
-      modal_tile = got_v[i];
-    }
-  }
-  if (modal <= 9)
-    return true;
-
-  /*
-   * A sparse level screen can legitimately make the quick sample almost
-   * uniform. Slot 0's vertical fall is mostly empty until the terrain scrolls
-   * into view, so the old diversity gate disabled exact gutters and exposed
-   * wrapped stale rows at the widescreen edges.
-   *
-   * Preserve the object-layer safeguard by looking for positive evidence:
-   * scan the native view for six source tiles that differ from the modal
-   * entry and require each one to reproduce VRAM. A repurposed object layer
-   * whose level source is blank finds no proof; one whose live objects
-   * disagree with that source fails the comparisons.
-   */
-  int proof = 0, proof_miss = 0;
-  for (uint32_t y = 4; y < 224; y += 8) {
-    for (uint32_t x = 4; x < 256; x += 8) {
-      uint32_t px = (uint32_t)wx + x;
-      uint32_t py = (uint32_t)wy + y;
-      uint16_t want = x2_bg_world_tile(s, px, py);
-      if (want == modal_tile)
-        continue;
-      uint16_t got =
-          g_ppu->vram[x2_bg_vram_word(s, px, py) & 0x7FFF];
-      if (want == got) {
-        if (++proof >= 6)
-          return true;
-      } else if (++proof_miss > 1) {
-        return false;
-      }
-    }
-  }
-  return false;
-}
-
-/* Call once per frame from the host's frame-prep, after g_ws_extra is
- * known and before the PPU frame is drawn. */
+/* Exact background source for the widescreen margins. */
 void X2ConfigureWsBgMargins(void) {
-  static int s_enabled = -1, s_debug = -1;
-  if (s_enabled < 0) {
-    const char *e = getenv("SNESRECOMP_WS_BG_MARGINS");
-    s_enabled = (e && e[0] == '0') ? 0 : 1;
-    e = getenv("SNESRECOMP_WS_BG_MARGINS_DEBUG");
-    s_debug = (e && e[0] && e[0] != '0') ? 1 : 0;
-  }
-  static bool s_was_active;
-
-  /* bgmode is the raw $2105 byte: mode in bits 0-2 (X2 gameplay sets $09 =
-   * mode 1 + BG3-priority). Bits 4-5 must be clear too: 16x16 BG1/BG2 tiles
-   * would change the shadow's key units without failing self-validation
-   * (the walk compares map entries, which stay correct either way). */
-  bool scene_ok = s_enabled && g_ws_active && g_ppu &&
-                  (g_ppu->bgmode & 0x37) == 1 &&
-                  g_ppu->bgXsc[0] == kX2BgStreams[0].bgsc &&
-                  g_ppu->bgXsc[1] == kX2BgStreams[1].bgsc;
-
-  if (s_debug) {
-    static unsigned s_calls;
-    if ((s_calls++ % 120) == 0) {
-      fprintf(stderr,
-              "[x2_ws_bg] call=%u en=%d ws=%d ppu=%d bgmode=%u "
-              "bgXsc=%02X/%02X scene_ok=%d extra=%d\n",
-              s_calls, s_enabled, (int)g_ws_active, g_ppu != NULL,
-              g_ppu ? g_ppu->bgmode : 0xFF, g_ppu ? g_ppu->bgXsc[0] : 0xFF,
-              g_ppu ? g_ppu->bgXsc[1] : 0xFF, (int)scene_ok, g_ws_extra);
-    }
-  }
-
-  bool ok[2] = {false, false};
-  int32_t wxp[2] = {0, 0}, wyp[2] = {0, 0};
-  bool any = false;
-  if (scene_ok) {
-    for (int l = 0; l < 2; l++) {
-      const X2BgStream *s = &kX2BgStreams[l];
-      /* World anchor from the game's stream struct, snapped onto the PPU
-       * scroll phase: the scroll registers are the authority for pixel
-       * phase, never a WRAM mirror (docs/WIDESCREEN.md; MMX1's sliced-
-       * pillar bug). The anchor supplies the high bits PPU scroll lacks. */
-      uint16_t h = (uint16_t)(g_ppu->hScroll[l] & 0x3FF);
-      uint16_t v = (uint16_t)(g_ppu->vScroll[l] & 0x3FF);
-      int32_t wx = (int32_t)x2_wram16(s->worldXAddr);
-      int32_t wy = (int32_t)x2_wram16(s->worldYAddr);
-      int32_t dh = (int32_t)((uint16_t)(h - wx) & 0x3FF);
-      int32_t dv = (int32_t)((uint16_t)(v - wy) & 0x3FF);
-      if (dh >= 512) dh -= 1024;
-      if (dv >= 512) dv -= 1024;
-      wx += dh;
-      wy += dv;
-      if (!x2_bg_stream_valid(s, wx, wy)) {
-        if (s_debug) {
-          static unsigned s_fail[2];
-          if ((s_fail[l]++ % 120) == 0)
-            fprintf(stderr,
-                    "[x2_ws_bg] L%d VALIDATION FAIL #%u wx=%d wy=%d "
-                    "h=%u v=%u anchor=(%u,%u)\n",
-                    l, s_fail[l], wx, wy, h, v, x2_wram16(s->worldXAddr),
-                    x2_wram16(s->worldYAddr));
-        }
-        continue;
-      }
-      ok[l] = true;
-      any = true;
-      wxp[l] = wx;
-      wyp[l] = wy;
-      WsShadowSetWorld(l, (uint32_t)wx, (uint32_t)wy);
-      WsShadowSetBlankTile(l, -1); /* miss = authentic map wrap */
-      /* Moving platforms are drawn INTO the BG1 tilemap; the widened
-       * object windows make the game draw them in the gutters, and the
-       * exact refill below must yield to those writes or platforms get
-       * erased at the native boundary (owner-reported half-culling). */
-      WsShadowSetRespectGameWrites(l, 60);
-    }
-  }
-
-  if (!any) {
-    if (s_was_active)
-      WsShadowReset();
-    s_was_active = false;
-    WsShadowFrame(g_ppu); /* no registration = shadow deactivated */
-    return;
-  }
-  s_was_active = true;
-  WsShadowFrame(g_ppu);
-
-  /* Force-fill every margin cell with the exact level data, every frame.
-   * ForceTile (not Prefill): the provider is the single source of truth
-   * in the gutters, so a stale history capture or a wrong-chunk VRAM
-   * attribution can never outlive one frame. The native view is captured
-   * by WsShadowFrame above and is never touched here. */
-  int margin = (g_ws_extra + 7) & ~7;
-  for (int l = 0; l < 2; l++) {
-    if (!ok[l])
-      continue;
-    const X2BgStream *s = &kX2BgStreams[l];
-    const int32_t tx_rng[2][2] = {
-        {(wxp[l] - margin) >> 3, (wxp[l] - 1) >> 3},          /* west  */
-        {(wxp[l] + 256) >> 3, (wxp[l] + 255 + margin) >> 3},  /* east  */
-    };
-    /* Rows: WsShadowTile folds the renderer's wrapped Y into anchor±512,
-     * and HDMA parallax bands can present lines far from the frame vScroll
-     * (X-Hunter tower: millions of margin misses with a 30-row fill). Cover
-     * the whole fold range; ~94 rows x ~14 cols is still trivial. */
-    int32_t ty0 = (wyp[l] - 256) >> 3, ty1 = (wyp[l] + 491) >> 3;
-    if (ty0 < 0)
-      ty0 = 0;
-    for (int r = 0; r < 2; r++) {
-      for (int32_t tx = tx_rng[r][0]; tx <= tx_rng[r][1]; tx++) {
-        if (tx < 0)
-          continue; /* west of world 0: leave the authentic wrap */
-        for (int32_t ty = ty0; ty <= ty1; ty++) {
-          WsShadowForceTile(l, (uint32_t)tx, (uint32_t)ty,
-                            x2_bg_world_tile(s, (uint32_t)tx << 3,
-                                             (uint32_t)ty << 3));
-        }
+  /* The authored Serges room ends at camera-max+256. Its foreground is the
+   * repeating wall/spike backdrop; the moving machine is a separate BG2
+   * canvas and the seat/pilot are OAM. Select the room from its authored
+   * camera limit and resident machine, including the camera's approach to
+   * the lock: its right boundary is already visible in a widescreen gutter
+   * before the live scroll reaches the limit. Continue the backdrop there.
+   * Preserve the real left gutter (including its door at wider aspects);
+   * repeating the composed frame would also duplicate the boss/platforms. */
+  uint16_t repeat_right=0;
+  if (g_ws_active && g_ppu && g_ram[0x1fad] == 10 &&
+      (g_ppu->bgmode & 0x37) == 1 &&
+      (g_ram[0x1e70] | g_ram[0x1e71] << 8) == 0x0a80) {
+    for (unsigned object=0xd18; object<0x1518; object+=0x40) {
+      if (g_ram[object] && g_ram[object+10] == 0x61 && !g_ram[object+11]) {
+        repeat_right=0x0b80;
+        break;
       }
     }
   }
+  /* This actor's BG2 art is already in its local map before the native
+   * streamer uploads the full front. Resolve gutters from that live map,
+   * including cannon destruction, even while the native view is empty. */
+  Mmx23ConfigureWsBgMarginsForRoom(g_snes,g_ppu,g_ram,g_ws_active,
+                                  repeat_right,repeat_right != 0);
+  /* The arena's BG2 is a complete circular parallax canvas. Its HDMA scroll
+   * exposes columns beyond the finite world-source layout (for example
+   * worldX768), where an exact-source query returns black padding instead
+   * of the scenery already present in VRAM. Keep the real hardware canvas
+   * for this layer, including per-line scroll. The ride retains its policy. */
+  if (g_ws_active && g_ram[0x1fad] == 7 &&
+      g_ram[0xd1] == 4 && g_ram[0xd2] == 4 &&
+      (g_ram[0x1e60] | g_ram[0x1e61] << 8) == 0x0318 &&
+      g_ram[0x9da] != 0x40)
+    WsShadowUseVram(1);
+  /* The fixed final arena has no authored scenery outside its side walls.
+   * Extend only the wall-edge pixels with the existing elastic compositor;
+   * retain the native room 1:1 and contain the BG2 boss canvas so its circular
+   * map cannot echo a second head into a gutter. Bounds, rather than the live
+   * scroll, keep the policy stable through the original camera shake. */
+  static const uint8_t sigma_bounds[10] = {
+      0x00,0x0e,0x00,0x0d,0x00,0x0d,0x00,0x0e,0x00,0x0e};
+  if (g_ws_active && g_ppu && g_ram[0x1fad] == 5 &&
+      (g_ram[0x1fae] == 4 || g_ram[0x1fae] == 5) && g_ram[0xd1] == 4 &&
+      (g_ppu->bgmode & 7) == 1 &&
+      (g_ppu->bgXsc[0] & 0xfc) == 0x50 && (g_ppu->bgXsc[1] & 0xfc) == 0x58 &&
+      !memcmp(g_ram+0x1e68,sigma_bounds,sizeof(sigma_bounds))) {
+    PpuSetWidescreenLayerElasticSplitBandSlot(g_ppu,0,0,0,224,0,1,255,256);
+    PpuSetWidescreenLayerClamp(g_ppu,2);
+  }
+}
+
+bool X2UseNativeFrame(void) {
+  return g_ram[0x1fad] == 12 && g_ram[0xd1] == 4;
 }
 
 /* ── 16:9 object windows (spawn/activation/draw) ──────────────────────────
@@ -592,13 +383,43 @@ uint16 X2WsObjWinLimit(uint16 base) {
  * only after entering a widescreen gutter even when their later
  * activation/draw windows are already widened. Keep the stream grid aligned
  * and move it beyond the visible margin plus the same 32-pixel wake slack. */
-static uint16_t x2_ws_spawn_stream_left_extra(void) {
+static int x2_ws_spawn_stream_margin(void) {
   int margin = x2_ws_spawn_margin();
+  if (!margin)
+    return 0;
+
+  /* Boss Rush packs separate arenas beside one another. The wide frontier
+   * allocates the neighbouring Magna Centipede while X fights Wire Sponge;
+   * his script interferes with that encounter and its return teleporter.
+   * All room records in this stage retain native allocation timing. */
+  unsigned stage = g_ram[0x1fad];
+  if (stage == 0x0c)
+    return 0;
+
+  /* Serges' platform ($29:FA19, enemy $61 at X=$0A40) and final-stage
+   * Zero ($29:E704, enemy $08 -> $68 at X=$0E78) must be allocated after
+   * the preceding door has advanced the native camera. An
+   * early gutter allocation consumes its level record while the encounter
+   * is still outside the arena, leaving an empty, locked room. Protect the
+   * complete look-ahead interval at every aspect, including the initial
+   * vertical sweep. Resident-object visibility and rendering stay wide. */
+  unsigned extra = (unsigned)((margin + 31) & ~31);
+  unsigned camera = g_ram[0x1e5d] | (unsigned)g_ram[0x1e5e] << 8;
+  unsigned door_actor_x = stage == 0x0a ? 0x0a40u :
+      stage == 5 && g_ram[0x1fae] == 4 ? 0x0e78u : 0;
+  if (door_actor_x && camera <= door_actor_x &&
+      camera + 0x100u + extra >= door_actor_x)
+    return 0;
+  return margin;
+}
+
+static uint16_t x2_ws_spawn_stream_left_extra(void) {
+  int margin = x2_ws_spawn_stream_margin();
   return margin ? (uint16_t)((margin + 31) & ~31) : 0;
 }
 
 static uint16_t x2_ws_spawn_stream_right_extra(void) {
-  int margin = x2_ws_spawn_margin();
+  int margin = x2_ws_spawn_stream_margin();
   /* Round outward, not inward. The slot-3 frog can sit near the far end of
    * its 32-pixel record bucket and needs several initialization frames before
    * it emits OAM; rounding down allocated it at screen X=336 in a 342px view. */
@@ -1008,6 +829,8 @@ void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
 
 void X2OnStateLoaded(uint32_t version) {
   (void)version;
+  /* Renderer history belongs to the abandoned timeline, not this snapshot. */
+  WsShadowReset();
   if (s_execution_loaded) RtlApplyExecutionState();
   s_execution_loaded = false;
   if (s_lle_extra_loaded) {

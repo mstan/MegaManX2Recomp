@@ -1,16 +1,16 @@
-# 16:9 widescreen — Mega Man X2
+# 16:9 widescreen â€” Mega Man X2
 
 ## Status: HUD + BG margins done; slot-3 spawn repro fixed; broad playtest pending.
 
 Done, measured, and documented in `docs/OAM_SURVEY.md`:
-* **HUD anchoring** (part 2) — signature-gated, owner-validated.
-* **Background margins on both layers** (part 1) — exact per-frame fill from
+* **HUD anchoring** (part 2) â€” signature-gated, owner-validated.
+* **Background margins on both layers** (part 1) â€” exact per-frame fill from
   the game's own layout/screen/metatile structures, decoded from the column
   composer `$00:B449`. Both gutters show real level data (0.00% mismatch vs
   the native view in layer-isolated measurement), the leading edge included.
   Self-validating gate; kill-switch `SNESRECOMP_WS_BG_MARGINS=0`.
 
-* **Object windows (parts 3-4, phase 1)** — the three shared bank-00
+* **Object windows (parts 3-4, phase 1)** â€” the three shared bank-00
   activation/visibility/draw window checks are widened by margin+32 via
   `tools/apply_overrides.py` (marker-injected into src/gen, restorable,
   wired into regen.sh). `x2_rtl.c` applies the identical rewrites to the
@@ -18,7 +18,7 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   with no generated body. Enemies act and render in the gutters
   (screenshot-verified). Kill-switch `SNESRECOMP_WS_SPAWN=0`.
 
-* **Dynamic record frontier** — the slot-3 frog exposed a separate gate:
+* **Dynamic record frontier** â€” the slot-3 frog exposed a separate gate:
   `$00:DC50` scans 32-pixel level-record buckets and `$00:DCE9` allocates the
   large actor only after its bucket reaches the native camera frontier.
   Four exact generated hooks now widen DC50's left/right probes and its
@@ -29,7 +29,7 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   tail-JMP and full-LLE execution are covered too. The on-disk ROM is never
   changed.
 
-* **Weather overlays (rain, and by signature the heat shimmer)** — the
+* **Weather overlays (rain, and by signature the heat shimmer)** â€” the
   weather is BG3 alone on the SUBSCREEN blended via color math (measured
   from the owner's rain save: BG3SC=$0C 32x32 static streak texture,
   animated purely by scroll). `X2Display_PreparePpuFrame` widens BG3
@@ -37,7 +37,7 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   clamp. A/B-measured: 478 vs 198 bright rain pixels in the east gutter,
   native identical. Kill-switch `SNESRECOMP_WS_BG3=0`.
 
-* **Inlined window copies swept** — apply_overrides.py recognizes symmetric
+* **Inlined window copies swept** â€” apply_overrides.py recognizes symmetric
   pairs through `$A0/$240` and centered-distance checks whose first add and
   final limit must both grow. The current generated coverage has 40
   object-window rewrites plus four DC50 streamer rewrites. The runtime
@@ -45,7 +45,7 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   power-of-two cart mirrors, including `$00:DDB5`, which has no emitted body.
   DC50 has an independent exact-signature gate.
   The earlier "$09DD frontier" hypothesis is
-  DISPROVEN ($09DD = player/attention X — see OAM_SURVEY.md); the
+  DISPROVEN ($09DD = player/attention X â€” see OAM_SURVEY.md); the
   first-appearance probe shows no pop-in at the 16:9 edge in the surveyed
   area.
 
@@ -57,7 +57,7 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
   to be the separate dynamic-record frontier above. Weather margins now use
   the line-REPEAT policy instead of map wrap.
 
-* **Sparse vertical margins** — the exact BG provider now proves sparse level
+* **Sparse vertical margins** â€” the exact BG provider now proves sparse level
   sources with six non-modal native-view matches instead of standing down on
   a mostly empty sample. The retained slot-0 vertical-fall replay keeps both
   layers active with zero west/east shadow misses; wrapped stale rows are
@@ -65,7 +65,7 @@ Done, measured, and documented in `docs/OAM_SURVEY.md`:
 
 Still open before calling the implementation broadly validated:
 * heat-shimmer visual confirmation in play (same mechanism as rain, so the
-  BG3 gate should cover it — unverified);
+  BG3 gate should cover it â€” unverified);
 * owner playtest across stages and both travel directions. The deterministic
   slot-3 frog repro is fixed, but other record types may have additional
   per-type wake consumers and should be traced by type if one still pops.
@@ -89,7 +89,7 @@ Skipping it means rediscovering X1's bugs in X1's order. It also gives the
 recommended ORDER of work, which matters because a later step's symptoms mimic
 an earlier step's bug.
 
-## Mega Man X 1 is the reference — the SHAPES port, the ADDRESSES do not
+## Mega Man X 1 is the reference â€” the SHAPES port, the ADDRESSES do not
 
 `MegamanXRecomp` has a working, surveyed 16:9. Its hooks live in
 `src/mmx_rtl.c` and are injected into the *generated* C by
@@ -117,7 +117,7 @@ Per layer, and it must be every layer the game uses, not just the surveyed one:
 * The added margin columns must be **populated before they are shown**, or
   first-visit margins display stale or wrapped tiles. MMX1 does this by reading
   the game's own retained level map to seed the margin (`WsShadowPrefillTile`).
-* **Per-line PPU scroll registers are the authority for pixel phase — never a
+* **Per-line PPU scroll registers are the authority for pixel phase â€” never a
   WRAM camera mirror.** The mirror is off by one against the PPU and produces the
   "feature sliced in half at the margin" artefact. This bit MMX1 once and is
   worth not repeating.
@@ -184,7 +184,7 @@ which types are ordinary enemies versus controllers.
 
 ### 4. Enemy culling respects 16:9 bounds
 
-The mirror of (3) — cull keyed to the native edge deletes things still visible in
+The mirror of (3) â€” cull keyed to the native edge deletes things still visible in
 the margins. Widen the scroll-off verdict symmetrically:
 
 ```
@@ -198,7 +198,7 @@ miss:
 
 * the metasprite X **reject limit** must be widened (`vanilla_limit + margin`);
 * the reject **compare** must be replaced, because it is a single *unsigned*
-  test — negative screen X wraps high and always rejects, so sprites still vanish
+  test â€” negative screen X wraps high and always rejects, so sprites still vanish
   at the native left edge no matter how far the limit is widened:
 
 ```c
@@ -224,7 +224,7 @@ pop in.
   `SNESRECOMP_WS_STAGE`) so a misbehaving part can fall back to authentic 4:3
   independently, with the rest still active.
 
-## Remaining validation — what to measure, with what
+## Remaining validation â€” what to measure, with what
 
 The major address families are now recorded above. These always-on rings remain
 the right tools for finding stage-specific exceptions; query them, do not
@@ -238,7 +238,7 @@ arm-then-run:
 | which code culls/spawns | `SNESRECOMP_WRITE_WATCH` on an object slot, then the reported function |
 | per-layer scroll authority | `get_ppu_state` (`hScroll`/`vScroll`) vs the WRAM mirror |
 
-Reaching live gameplay requires a human at the controls — the standing rule is
+Reaching live gameplay requires a human at the controls â€” the standing rule is
 that gameplay verdicts are the owner's, not the agent's.
 
 ## Activation and release gate
@@ -254,3 +254,142 @@ Before describing the implementation as broadly validated:
 2. confirm the heat-shimmer signature in live play;
 3. capture and diff the authentic 4:3 regression baseline; and
 4. record any stage-specific exceptions and their kill-switches in this file.
+
+## Door feedback follow-up (2026-10-26)
+
+Pin the shared X2/X3 resolver with X1's strict mirrored door-body policy.
+The camera's room-facing column stays visible; the duplicate face samples
+the neighboring wall, including during recent dynamic uploads. Symmetric
+wall decoration is explicitly rejected by the detector. The Serges approach
+and interior now show one face per doorway on both sides.
+
+Reset unsaved renderer history on state loads. A continuous/reloaded door
+crossing matches all WRAM bytes and rendered pixels. Production C regressions
+cover the measured X2/X3 door patterns, wall rejection, native identity and
+override precedence. Muted debug/software rendering measured about227fps in
+the doorway scene; this is headroom evidence, not release benchmarking.
+
+The owner's rocket-ascent/boss margin failures and missing Serges entrance
+art remain open. Earlier pre-launch rocket approach evidence does not qualify
+the actual ride. Boss Rush's requested native framing remains in place, and
+accepted mechanics checks should not be repeated for this door handoff.
+
+## Rocket/ascent burndown (2026-10-26)
+
+The actual ride and arena exposed four presentation defects: uniform BG1 sky
+was rejected by the object-layer safeguard, source scroll aliases used1024
+instead of the512x256 map, mode2 shimmer bypassed the exact source, and X2
+shifted gameplay BG3 corners as HUD. The shared resolver/OPT path now serves
+the continued terrain; X2 reuses X3's independent OAM HUD anchor. Native
+self-validation and the BG2 moving-object safeguard remain.
+
+The original rocket control/camera handoff passes at342 and pure684. Current
+save/load matches RAM and pixels; same-width before/after runs match full RAM
+and VRAM. Cropped native pixels match outside the relocated HUD. A scratch
+byte differs in one cross-width arena sample; full cross-width RAM equality
+is not claimed. Sixteen inactive-provider render cases are unchanged. The
+shared update also preserves accepted X3 factory and Byte pixels/RAM.
+
+Original-ROM arena reference is valid; failed rocket-reference preparation
+is excluded. Owner visual confirmation is pending a bundled handoff. Serges
+entrance/mecha artwork remains the next open priority.
+
+## Serges right boundary (2026-10-26)
+
+Continue the authored BG1 wall/spike backdrop beyond world X0B80 while the
+stage10 machine is resident and the original camera is locked at X0A80.
+This is a right-gutter source substitution. It preserves native VRAM and
+the actual left scenery/door, including at684px; BG2 and OAM are unchanged.
+
+Replays at hybrid342, hybrid684 and interpreter684 match the previous build
+in all native/left pixels and full WRAM/VRAM across21 samples each. Only the
+right gutter changes. Save/load reproduces RAM and pixels; a rocket state
+loaded before and after this room produces identical pixels, confirming
+the room selection clears. Production source/precedence tests also pass.
+
+The owner's missing entrance/seat-art observation stays open. OAM presence
+does not establish visual correctness. A focused current-build entrance
+setup on a live platform is being prepared for that check; accepted door,
+platform and ghost checks do not need repeating.
+
+### Current-main combined validation (2026-10-27)
+
+Game code7393650 on combined engine2cb5d79 retains the exact e8992d09
+Serges/rocket/Ostrich comparisons already recorded. New interpreter684
+Zero and Black Zero entries each preserve complete output and128KiB WRAM
+at24 samples over360 frames, with original actor68 present in both builds.
+These entry replays do not repeat the previously qualified full branch finishes.
+Current combined-build rocket save/load also reproduces output and WRAM.
+
+Six alternating paired360-frame rocket-ascent samples match the same host,
+title code, interpreter342, software/dummy output, FULL trace history and
+optional coverage recordingOFF. Step wall time is lower in all six candidate
+samples (median7.3% lower), on this one protocol-headroom workload. No broader
+speed claim follows. X3's separate mixed samples are neutral/inconclusive;
+results are not pooled across games. Other-consumer/startup/memory coverage
+and the individual pending owner visuals remain separate gates.
+
+### Refreshed engine base (2026-10-27)
+
+The engine PR is rebased onto main5ac4b98. Reviewed0095609, compiled combined
+e772aca and integrationa99e2fc have identical tracked source trees. Both title
+pins now select this reviewed engine; generated title code is unchanged.
+
+New X2 build58982242 passes96 interpreter and104 default-execution comparison
+samples, including rocket780, Serges360, Ostrich300 and default Sigma120.
+Complete output and128KiB WRAM match the preserved95ad integration. Sampled
+rocket PCM/SPC state is byte-identical in both execution modes. Current save,
+Pause/Capture and all three refreshed owner setup replays are exact.
+
+Native APU time and SLICE8 CRC are verified in the actual build. Standard
+rendering remains in use; this is not the MMX custom native-raster package.
+Six paired240-frame samples per execution mode are mixed within shared-host
+variation and neutral/inconclusive. Warm startup, RSS and private commitment
+are effectively unchanged; FULL diagnostic footprints are not release costs.
+The other titles' campaign evidence is retained separately. Focused human
+visuals, skipped content/independent audio and broader-consumer follow-up
+remain open. See `new_main_qualification` in the audit JSON for exact identities.
+
+### Maoh object canvas and shared presentation follow-up (2026-10-27)
+
+Pin83eee19 selects engine05786e5; X2 gameplay/generated code remains
+unchanged. Build209813aa matches58982242 in56 full-output/WRAM samples
+through Serges, rocket, Sigma and interpreter684 Ostrich. Non-silent
+PCM/full SPC/APU and all three current prepared states’ save/load and
+Pause/Capture/restart checks pass. Timing samples are small and mixed,
+neutral/inconclusive. Actual trace is FULL despite SMALL in the cache.
+Owner observations and the same pending segments are preserved; this
+does not relabel earlier boss/ending proofs as a new full sweep.
+
+### Serges backdrop before the camera lock (2026-10-27)
+
+The owner accepted Ostrich entry bars and X2 Sigma walls, but observed
+a brief right-side void before Serges enters. The room extension now
+uses the original camera limit and resident machine during the approach,
+so its backdrop is present before the live camera reaches the lock.
+
+Buildf59186d3 / codeaa07437 passes424 paired picture/WRAM/VRAM/OAM
+samples across native256/default,342/default,684/default and684/interpreter.
+Every initial approach frame through90 is checked, followed by entrance
+samples through240. Native and left scenery stay exact; the settled
+accepted room stays exact in the full output. Retained pre-lock pictures
+show the continued wall/spikes instead of the baseline void.
+
+Rocket, Ostrich and Sigma full-output/WRAM replays and the fresh Serges
+save/load/Pause/Capture/restart pass. The screenshot API copies the most
+recent presentation, so the one initial stale-buffer comparison is
+excluded and repeated at the same stopped simulation frame. No guest
+state difference or persistent native-picture regression was observed.
+
+Only Serges needs the focused visual recheck. Previously accepted checks
+remain closed; Kaiser and broader content/audio/consumer gaps remain
+separate. No merge, release or full-sweep completion is claimed.
+
+### Owner clearance and release handoff (2026-10-27)
+
+The owner confirmed "x2 now passes entirely" on buildf59186d3 after the
+Serges approach fix, and requested the X2 release and a move to X3.
+All X2 individual visual checks are accepted; do not present them again.
+Release0.1.5 uses the qualified game/engine sources with production trace
+and instruction-debugger instrumentation disabled. The packaged runtime
+and dependency checks are recorded separately from the diagnostic build.

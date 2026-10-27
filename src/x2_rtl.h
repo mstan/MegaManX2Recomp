@@ -21,6 +21,8 @@ void X2ConfigureWsHud(void);
  * native view; falls back to the authentic map wrap when it cannot prove
  * the scene. Kill-switch: SNESRECOMP_WS_BG_MARGINS=0. */
 void X2ConfigureWsBgMargins(void);
+/* Packed rematch rooms have no continuous offscreen world to expose. */
+bool X2UseNativeFrame(void);
 
 /* LLE host execution cursor (resume PC + CpuState) — not covered by
  * snes_saveload, which snapshots the unused snes->cpu. */
