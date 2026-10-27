@@ -286,14 +286,15 @@ void X2ConfigureWsHud(void) {
 void X2ConfigureWsBgMargins(void) {
   /* The authored Serges room ends at camera-max+256. Its foreground is the
    * repeating wall/spike backdrop; the moving machine is a separate BG2
-   * canvas and the seat/pilot are OAM. Once the original camera lock has
-   * settled, continue that backdrop beyond its authored right boundary.
+   * canvas and the seat/pilot are OAM. Select the room from its authored
+   * camera limit and resident machine, including the camera's approach to
+   * the lock: its right boundary is already visible in a widescreen gutter
+   * before the live scroll reaches the limit. Continue the backdrop there.
    * Preserve the real left gutter (including its door at wider aspects);
    * repeating the composed frame would also duplicate the boss/platforms. */
   uint16_t repeat_right=0;
   if (g_ws_active && g_ppu && g_ram[0x1fad] == 10 &&
       (g_ppu->bgmode & 0x37) == 1 &&
-      (g_ram[0x1e5d] | g_ram[0x1e5e] << 8) == 0x0a80 &&
       (g_ram[0x1e70] | g_ram[0x1e71] << 8) == 0x0a80) {
     for (unsigned object=0xd18; object<0x1518; object+=0x40) {
       if (g_ram[object] && g_ram[object+10] == 0x61 && !g_ram[object+11]) {
