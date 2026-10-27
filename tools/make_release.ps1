@@ -37,7 +37,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$build = Join-Path $root $BuildDir
+$build = if ([IO.Path]::IsPathRooted($BuildDir)) {
+  [IO.Path]::GetFullPath($BuildDir)
+} else {
+  Join-Path $root $BuildDir
+}
 $exeName = 'MegaManX2SNESRecomp.exe'
 $exe = Join-Path $build $exeName
 $assets = Join-Path $build 'assets'
