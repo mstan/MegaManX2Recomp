@@ -317,6 +317,21 @@ void X2ConfigureWsBgMargins(void) {
       (g_ram[0x1e60] | g_ram[0x1e61] << 8) == 0x0318 &&
       g_ram[0x9da] != 0x40)
     WsShadowUseVram(1);
+  /* The fixed final arena has no authored scenery outside its side walls.
+   * Extend only the wall-edge pixels with the existing elastic compositor;
+   * retain the native room 1:1 and contain the BG2 boss canvas so its circular
+   * map cannot echo a second head into a gutter. Bounds, rather than the live
+   * scroll, keep the policy stable through the original camera shake. */
+  static const uint8_t sigma_bounds[10] = {
+      0x00,0x0e,0x00,0x0d,0x00,0x0d,0x00,0x0e,0x00,0x0e};
+  if (g_ws_active && g_ppu && g_ram[0x1fad] == 5 &&
+      (g_ram[0x1fae] == 4 || g_ram[0x1fae] == 5) && g_ram[0xd1] == 4 &&
+      (g_ppu->bgmode & 7) == 1 &&
+      (g_ppu->bgXsc[0] & 0xfc) == 0x50 && (g_ppu->bgXsc[1] & 0xfc) == 0x58 &&
+      !memcmp(g_ram+0x1e68,sigma_bounds,sizeof(sigma_bounds))) {
+    PpuSetWidescreenLayerElasticSplitBandSlot(g_ppu,0,0,0,224,0,1,255,256);
+    PpuSetWidescreenLayerClamp(g_ppu,2);
+  }
 }
 
 bool X2UseNativeFrame(void) {

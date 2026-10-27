@@ -1,5 +1,24 @@
 {
   "date": "2026-10-26",
+  "current_status": {
+    "accepted": [
+      "Rocket/ascent",
+      "Serges backdrop/weakpoint/full exit",
+      "Boss Rush bars",
+      "Single doors"
+    ],
+    "pending_visual": [
+      "Serges entering front",
+      "Ostrich entrance bars",
+      "New Sigma arena wall extension"
+    ],
+    "qualified_mechanics": "Cumulative rematches, normal final-stage entry, checkpoint-assisted both Sigma forms and ending; bypasses retained in fortress_final_progress.",
+    "remaining": [
+      "Zero/Black Zero approach/branches",
+      "Remaining full content/audio coverage",
+      "Current-main integration and final performance gate"
+    ]
+  },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
   "framework_head": "b4a4e00fbf37782deb57066fb4c54f8aa587f527",
   "related_x1_history": [
@@ -424,7 +443,34 @@
       "Full stage/sublevel/exit inventory, independent audio and current-main combined integration",
       "Focused owner confirmation of Serges entering front and Ostrich entrance bars"
     ],
-    "visual_caveat": "Final Sigma room gutters show adjacent stage scenery; final-stage presentation remains unqualified. Mechanic passes do not close that visual issue.",
+    "visual_caveat": "Fixed-arena wall extension now passes automated native-pixel/RAM/VRAM comparisons; owner visual confirmation pending.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
+  },
+  "fixed_arena_followup": {
+    "date": "2026-10-27",
+    "engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+    "source_content_sha256": "de7a0d96792a474437d0ed3adbf59f0633a732daf1e661e030fdbf5b52f11961",
+    "binary_sha256": "009dd3bba45bbed70da503d5494725d4c1e493a246d65a4f14c3c99032a70a71",
+    "change": "Reuse the existing elastic compositor to continue only the outer BG1 wall-edge pixels; preserve the native room1:1 and contain BG2 object canvases within it. No actor, camera, physics, timing or outcome writes.",
+    "selection": "Only the authored fixed Sigma arena bounds, in its normal mode1 background maps. Bounds rather than live scroll retain the policy through camera shake; X2 retains it through final-clear fade. Ordinary scenes reset the frame-local policy.",
+    "validation": {
+      "cases": [
+        "x2-first-arena-342",
+        "x2-first-arena-684",
+        "x2-head-arena-342",
+        "x2-head-arena-684"
+      ],
+      "samples": "30 samples over360 frames per form/width at342 and interpreter684; all native pixels,128KiB WRAM and64KiB VRAM match the prior owner runtime",
+      "save_load": "All4 form/width cases: zero pixel and WRAM differences",
+      "lifecycle": "X2 original final clear and ending handoff: native pixels/WRAM match; ending full output matches. X3 accepted factory scene after arena: full output and WRAM match at684.",
+      "shake": "X2 genuine cameraX3587 while locked bounds remain3584 was rendered and inspected; no camera values injected."
+    },
+    "runtime": {
+      "status": "neutral/inconclusive",
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-arena-runtime.json",
+      "limit": "Short matched serial diagnostic headroom samples are mixed under host/disk load. They establish neither an optimization win nor a reproducible regression; current-main built-runtime gate remains ahead."
+    },
+    "owner_visual_acceptance": "Pending only these new final-arena visuals; prior accepted checks remain accepted.",
     "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
   }
 }
