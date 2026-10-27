@@ -14,18 +14,15 @@
     "pending_visual": [],
     "qualified_mechanics": "Cumulative rematches, original final-stage entry, both Zero-room branches and native Sigma handoff; both Sigma forms and ending. Travel, collection and combat assists remain explicit.",
     "remaining": [
-      "Release0.1.5 packaging/runtime gate; cumulative content/reference/audio caveats remain documented as scope limits, not unresolved reported X2 defects. Broader shared-engine consumer follow-up is separate."
+      "No unresolved owner-reported X2 defects or human checks. Publishing0.1.5; independent exhaustive reference/audio comparisons and broader engine consumer coverage remain documented scope limits."
     ],
     "new_main_automated_gate": "Passed for current X2/X3: full images/WRAM, scalar/native game PCM+SPC, current save/Capture and matched runtime/startup/memory. Human/content/ending and broader-consumer caveats remain.",
     "current_owner_build": {
-      "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
-      "engine": "0095609940bc3a304da8c70f2dcab79264bbb8ab",
-      "compiled_engine": "e772aca74d06cef9435df2f34cda1689329b19c4",
-      "source_tree": "396f26717c1bf151b0e110950c5fd5f179c1823a",
-      "title_pin": "1b61330cf892e4933f4db3e9b81f821d82ae0268",
-      "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
-      "source": "new_main_qualification",
-      "owner_data_unchanged": true
+      "sha256": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
+      "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+      "title_code": "aa074374f2d0439e026c019775fc15d4310e940e",
+      "owner_approved": true,
+      "source": "serges_approach_followup"
     },
     "current_package": {
       "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
@@ -39,6 +36,12 @@
       "message": "x2 now passes entirely.",
       "binary": "f59186d3d190d38f50d2952d09657b890c3bcc28229ed523a757b3fdd98ac7d9",
       "release_requested": true
+    },
+    "released_package": {
+      "version": "0.1.5",
+      "binary": "45894fd5e326e8d48d86729d5456e81cbcc0136b037ab5d15deda2ffe935fb8b",
+      "archive_sha256": "dcfc7bee4e817cff7fd95c315800732ab4cc877df1c5225afd314585eac9494d",
+      "status": "Production gate passed; publication pending"
     }
   },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
@@ -1044,5 +1047,111 @@
       "message": "x2 now passes entirely."
     },
     "limitations": "Approach presentation fix only, not a new full-stage/full-game combat or independent original-game audio qualification. Existing individual passes and earlier binary-specific evidence remain. No merge/release."
+  },
+  "release_v0_1_5": {
+    "passed": true,
+    "date": "2026-10-27T22:29:34.436016+00:00",
+    "version": "0.1.5",
+    "compiled_source_commit": "18112a6691338b0102a1622e1607edfd64bad5a5",
+    "gameplay_fix": "aa074374f2d0439e026c019775fc15d4310e940e",
+    "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+    "ui": "0546fbcb0126bb14bf88d2128b4fe8a4229570a3",
+    "archive": "MegaManX2SNESRecomp-windows-x64-v0.1.5.zip",
+    "archive_sha256": "dcfc7bee4e817cff7fd95c315800732ab4cc877df1c5225afd314585eac9494d",
+    "archive_bytes": 13128270,
+    "binary_sha256": "45894fd5e326e8d48d86729d5456e81cbcc0136b037ab5d15deda2ffe935fb8b",
+    "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-release-qualification.json",
+    "runtime_cases": {
+      "native-serges": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "serges": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "rocket": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "ostrich": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      },
+      "sigma": {
+        "passed": true,
+        "checks": {
+          "mid.wram.bin": true,
+          "mid.vram.bin": true,
+          "mid.cgram.bin": true,
+          "mid.oam.bin": true,
+          "mid.fb.bgrx": true,
+          "end.wram.bin": true,
+          "end.vram.bin": true,
+          "end.cgram.bin": true,
+          "end.oam.bin": true,
+          "end.fb.bgrx": true,
+          "complete_presented_picture": true
+        }
+      }
+    },
+    "state_tests": {
+      "passed": true,
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-release-state-tests.log",
+      "sha256": "bb7cb0ccdc8afbc81ffc98d4970a73a8df5251eef4b5183b74d2105a6e0e1442",
+      "scope": "Production-profile real-ROM fixture: full immediate restore, deterministic replay, browser save/bindings, rewind and file load/replay in a fresh process."
+    },
+    "owner_clearance": "x2 now passes entirely; explicit commit/release request. No repeat X2 handoff.",
+    "settings": "Release,NATIVE APU,SLICE8 CRC,TRACE0,REVERSE_DEBUG0,SMALL audio trace; software/dummy/volume0 private QA. Windows-only PATH for each extracted runtime launch. Packaged first-run defaults remain audible and no QA config/mod selection is shipped.",
+    "promotion": "Qualified for authorized v0.1.5 publication; source PR merge/tag and release upload are the remaining release operations",
+    "scope": "Production archive runtime matches approved diagnostic build in full output and128KiB WRAM/VRAM/CGRAM/OAM at representative native/Serges/rocket/Ostrich/Sigma scene points. Assisted build-specific setup snapshots and player health only; no result writes. This is packaging/diagnostic-removal verification, not a repeat human playtest or complete stage audit."
   }
 }
