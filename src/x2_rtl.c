@@ -302,7 +302,21 @@ void X2ConfigureWsBgMargins(void) {
       }
     }
   }
-  Mmx23ConfigureWsBgMarginsForRoom(g_snes,g_ppu,g_ram,g_ws_active,repeat_right);
+  /* This actor's BG2 art is already in its local map before the native
+   * streamer uploads the full front. Resolve gutters from that live map,
+   * including cannon destruction, even while the native view is empty. */
+  Mmx23ConfigureWsBgMarginsForRoom(g_snes,g_ppu,g_ram,g_ws_active,
+                                  repeat_right,repeat_right != 0);
+  /* The arena's BG2 is a complete circular parallax canvas. Its HDMA scroll
+   * exposes columns beyond the finite world-source layout (for example
+   * worldX768), where an exact-source query returns black padding instead
+   * of the scenery already present in VRAM. Keep the real hardware canvas
+   * for this layer, including per-line scroll. The ride retains its policy. */
+  if (g_ws_active && g_ram[0x1fad] == 7 &&
+      g_ram[0xd1] == 4 && g_ram[0xd2] == 4 &&
+      (g_ram[0x1e60] | g_ram[0x1e61] << 8) == 0x0318 &&
+      g_ram[0x9da] != 0x40)
+    WsShadowUseVram(1);
 }
 
 bool X2UseNativeFrame(void) {
