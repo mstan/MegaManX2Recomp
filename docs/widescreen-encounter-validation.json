@@ -573,5 +573,68 @@
       ],
       "publication": "One current X2 executable and freshly saved approach states; owner settings/saves/notes preserved; selector left closed"
     }
+  },
+  "final_combined_engine_followup": {
+    "functional": {
+      "passed": true,
+      "game": "x2",
+      "identities": {
+        "candidate": "e8992d0935f1b8ce20b4a41ad4267d0310dfc84f676a4831aec6367ff2b7d75e",
+        "baseline": "634563c48280afd18f45604a7d23477eeaa1ef5a9843af4e05ba6ba0a235836e"
+      },
+      "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "baseline_engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+      "candidate_engine": "2cb5d796d11ff5273db89266af0d7734d36f8b18",
+      "reused_exact_binary_cases": {
+        "integration-x2-serges.json": true,
+        "integration-x2-rocket.json": true,
+        "integration-x2-ostrich.json": true
+      },
+      "new_cases": {
+        "zero": {
+          "passed": true,
+          "samples": 24
+        },
+        "blackzero": {
+          "passed": true,
+          "samples": 24
+        }
+      },
+      "scope": "Original pre-door Zero/Black Zero entry at interpreter684; actual actor68 presence, complete presented image and128KiB WRAM match at24 samples each. This does not repeat full branch finishes.",
+      "features": {
+        "megaman-x2.enhancement.widescreen/widescreen": true,
+        "snesrecomp.diagnostics.coverage/capture": false
+      }
+    },
+    "current_build_save_load": {
+      "case": "integration-final-x2-current-save",
+      "ram_difference": 0,
+      "pixel_difference": 0,
+      "passed": true
+    },
+    "runtime": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\integration-final-x2-runtime-coverage-off.json",
+      "workload": "Original rocket ascent",
+      "samples": 6,
+      "timed_frames_per_sample": 360,
+      "median_time_change_percent": -7.282246864809511,
+      "paired_range_percent": [
+        -14.055832833494076,
+        -3.7609498125930285
+      ],
+      "median_fps": {
+        "baseline": 215.37201095667967,
+        "candidate": 232.43991773214856
+      },
+      "assessment": "Lower protocol step time in all6 pairs on this one workload; no broad speed claim.",
+      "qualification": "Pure interpreter342/software/dummy output, audio emulation, traceFULL, optional coverage recordingOFF in both. One workload per game; separate earlier coverageON samples are not pooled."
+    },
+    "host": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\integration-final-runtime-host.json",
+    "remaining": [
+      "Pending individual owner visuals and optional Kaiser hit/escape/endings",
+      "Other Lab2 branch and skipped traversal/content/audio",
+      "Representative other-consumer/startup/memory gate"
+    ],
+    "promotion": "One current canonical owner binary per game remains unchanged on enginea4. No merge or release. Selector closed with four focused segments; optional hub assistance retired."
   }
 }

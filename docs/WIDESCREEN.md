@@ -311,3 +311,20 @@ The owner's missing entrance/seat-art observation stays open. OAM presence
 does not establish visual correctness. A focused current-build entrance
 setup on a live platform is being prepared for that check; accepted door,
 platform and ghost checks do not need repeating.
+
+### Current-main combined validation (2026-10-27)
+
+Game code7393650 on combined engine2cb5d79 retains the exact e8992d09
+Serges/rocket/Ostrich comparisons already recorded. New interpreter684
+Zero and Black Zero entries each preserve complete output and128KiB WRAM
+at24 samples over360 frames, with original actor68 present in both builds.
+These entry replays do not repeat the previously qualified full branch finishes.
+Current combined-build rocket save/load also reproduces output and WRAM.
+
+Six alternating paired360-frame rocket-ascent samples match the same host,
+title code, interpreter342, software/dummy output, FULL trace history and
+optional coverage recordingOFF. Step wall time is lower in all six candidate
+samples (median7.3% lower), on this one protocol-headroom workload. No broader
+speed claim follows. X3's separate mixed samples are neutral/inconclusive;
+results are not pooled across games. Other-consumer/startup/memory coverage
+and the individual pending owner visuals remain separate gates.
