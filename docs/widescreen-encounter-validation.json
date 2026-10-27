@@ -27,6 +27,12 @@
       "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
       "source": "new_main_qualification",
       "owner_data_unchanged": true
+    },
+    "current_package": {
+      "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+      "binary": "209813aa5459bf95355882f991b09bab1821e856c67a6619bc335cc0c4cd4169",
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-qualification.json",
+      "publication": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-publication.json"
     }
   },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
@@ -888,5 +894,49 @@
         }
       }
     }
+  },
+  "maoh_object_canvas_followup": {
+    "passed": true,
+    "engine": "05786e50bca11dff1f09f76c0e7ac9d48072c440",
+    "pin_commit": "83eee195ac258adf44a631265910de8d53a6145d",
+    "binary": "209813aa5459bf95355882f991b09bab1821e856c67a6619bc335cc0c4cd4169",
+    "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-qualification.json",
+    "regression": {
+      "x2-serges": {
+        "passed": true,
+        "samples": 16
+      },
+      "x2-rocket": {
+        "passed": true,
+        "samples": 16
+      },
+      "x2-sigma": {
+        "passed": true,
+        "samples": 8
+      },
+      "x2-ostrich": {
+        "passed": true,
+        "samples": 16
+      }
+    },
+    "audio": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-audio-x2.json",
+      "passed": true,
+      "scope": "Actual non-silent PCM, full SPC/ARAM/DSP/APU and WRAM match the current frozen owner engine009/NATIVE-APU package. New engine057 changes presentation only. Not independent original-game music/SFX correctness."
+    },
+    "runtime": {
+      "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-cost-x2-default.json",
+      "median_time_change_percent": 1.5533253805994907,
+      "range_percent": [
+        -2.323784461839007,
+        4.358531713722669
+      ],
+      "classification": "neutral/inconclusive: small mixed samples on a busy shared host, not a proven win/regression",
+      "minimum_candidate_fps": 221.35067444226442
+    },
+    "current_handoff": "Same three X2 pending states pass current save/load/Pause/Capture/restart; earlier owner acceptance unchanged",
+    "scope": "Shared engine pin only; X2 game logic/generated code unchanged. This is not a repeat current-binary full-boss sweep or new owner acceptance.",
+    "publication": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\maoh-package-publication.json",
+    "promotion": "One current executable per owner title, verified replacement/current-build states; settings/native saves/notes/acceptance preserved. Frozen previous binaries remain private evidence. No merge/release."
   }
 }

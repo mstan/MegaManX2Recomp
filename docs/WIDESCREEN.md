@@ -349,3 +349,14 @@ are effectively unchanged; FULL diagnostic footprints are not release costs.
 The other titles' campaign evidence is retained separately. Focused human
 visuals, skipped content/independent audio and broader-consumer follow-up
 remain open. See `new_main_qualification` in the audit JSON for exact identities.
+
+### Maoh object canvas and shared presentation follow-up (2026-10-27)
+
+Pin83eee19 selects engine05786e5; X2 gameplay/generated code remains
+unchanged. Build209813aa matches58982242 in56 full-output/WRAM samples
+through Serges, rocket, Sigma and interpreter684 Ostrich. Non-silent
+PCM/full SPC/APU and all three current prepared states’ save/load and
+Pause/Capture/restart checks pass. Timing samples are small and mixed,
+neutral/inconclusive. Actual trace is FULL despite SMALL in the cache.
+Owner observations and the same pending segments are preserved; this
+does not relabel earlier boss/ending proofs as a new full sweep.
