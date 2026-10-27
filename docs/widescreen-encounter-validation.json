@@ -265,7 +265,7 @@
         "Shared default-zero X3 Byte420-frame replay: full presented pixels and WRAM unchanged"
       ],
       "open": "Backdrop, exposed weakpoint and full Serges exit accepted in owner round5. Initial front remained failed; a live BG2 canvas fix is now prepared.",
-      "next": "Remaining fortress/final Sigma/ending routes, complete stage/sublevel inventory, independent audio and combined current-main integration remain open."
+      "next": "X2 cumulative rematches, final Sigma forms and ending now qualify with checkpoint/prerequisite bypasses recorded below. Zero/Black Zero approaches, remaining branches/X3 final paths, complete content/audio coverage and current-main integration remain open."
     },
     "followup_canvas_fixes": {
       "engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
@@ -396,5 +396,35 @@
     },
     "screenshot": "C:/Users/Matthew/Documents/ShareX/Screenshots/2026-10/MegaManX2SNESRecomp_11SpYmh5oi.png",
     "scope": "Individual checks only. No repeat accepted Byte/doors/factory, rocket, backdrop, BossRush bars or Serges exit; remaining fortress/final routes and integration remain open."
+  },
+  "fortress_final_progress": {
+    "gameplay_head": "773cb33a631fb773e1abc3b936ff5df5f5dfd461",
+    "engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+    "executable_sha256": "c5f94dd2c0a5fa9aa4c6cfb3bf566c2a4745f08b27add49646440f9e11443594",
+    "passed": [
+      "All8 rematches cumulatively set original1FD9:00,01,03,07,0F,1F,3F,7F,FF and return to checkpoint1",
+      "Original Sigma hub dialogue, fortress variant3->4, password and normal stage select enter stage5/variant4/checkpoint0",
+      "Original checkpoint4 final shaft, Sigma intro/AI, real projectile defeat, head-form creation and intro pass at342 and pure-interpreter684",
+      "The head accepts a real charged shot after explicit HP assist; original final-clear advances variant4->5 and enters ending mode at both widths",
+      "At342, the ending narrative, cast sequence and Thanks for playing / Presented by CAPCOM screen complete without further input/RAM writes",
+      "Current-build terminal-ending save/load has zero pixel and WRAM differences"
+    ],
+    "bypasses": [
+      "Earlier Maverick weapon eligibility supplied before the rematch audit",
+      "Original full checkpoint loader selects rematches while preserving results; hub entry travel bypassed",
+      "Checkpoint4 skips final-stage approach and Zero/Black Zero branch; these are unverified",
+      "Player position/health and boss HP1 assist; real projectile/charged damage, AI, camera, defeat and final-clear logic retained"
+    ],
+    "excluded": [
+      "Checkpoint5 is the earlier X-Hunter briefing, not Zero/final approach; unrelated setup is excluded"
+    ],
+    "remaining": [
+      "Zero/Black Zero approaches and branch coverage",
+      "Other remaining fortress branches and X3 final/Sigma/ending",
+      "Full stage/sublevel/exit inventory, independent audio and current-main combined integration",
+      "Focused owner confirmation of Serges entering front and Ostrich entrance bars"
+    ],
+    "visual_caveat": "Final Sigma room gutters show adjacent stage scenery; final-stage presentation remains unqualified. Mechanic passes do not close that visual issue.",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
   }
 }
