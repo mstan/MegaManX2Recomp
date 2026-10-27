@@ -558,6 +558,20 @@
       "Serges front/Ostrich bars/Sigma arena visual confirmation",
       "X3 Kaiser finishing hit and escape/ending",
       "Remaining fortress/content/audio coverage and final integration/runtime qualification"
-    ]
+    ],
+    "owner_pin_followup": {
+      "code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "runtime_engine": "a4e30664c078a2ee33ef61625cc73f5f1d546841",
+      "generation_engine": "2cb5d796d11ff5273db89266af0d7734d36f8b18",
+      "sha256": "634563c48280afd18f45604a7d23477eeaa1ef5a9843af4e05ba6ba0a235836e",
+      "passed": [
+        "Hybrid342 and pure684 original Zero entry",
+        "Pure684 original live fight, real charged defeat, recovery and native Sigma handoff",
+        "Rescued branch pure684 entry; full rescued branch qualified separately on current-main",
+        "Serges/rocket/Ostrich full output and128KiB WRAM unchanged",
+        "Current-build Sigma handoff save/load has0pixel/WRAM differences"
+      ],
+      "publication": "One current X2 executable and freshly saved approach states; owner settings/saves/notes preserved; selector left closed"
+    }
   }
 }
