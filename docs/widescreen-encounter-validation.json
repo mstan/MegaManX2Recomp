@@ -17,7 +17,17 @@
       "Remaining full content and independent audio coverage",
       "Focused owner visuals and broader-consumer follow-up; current X2/X3 new-base automation, startup/memory and matched runtime are qualified"
     ],
-    "new_main_automated_gate": "Passed for current X2/X3: full images/WRAM, scalar/native game PCM+SPC, current save/Capture and matched runtime/startup/memory. Human/content/ending and broader-consumer caveats remain."
+    "new_main_automated_gate": "Passed for current X2/X3: full images/WRAM, scalar/native game PCM+SPC, current save/Capture and matched runtime/startup/memory. Human/content/ending and broader-consumer caveats remain.",
+    "current_owner_build": {
+      "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+      "engine": "0095609940bc3a304da8c70f2dcab79264bbb8ab",
+      "compiled_engine": "e772aca74d06cef9435df2f34cda1689329b19c4",
+      "source_tree": "396f26717c1bf151b0e110950c5fd5f179c1823a",
+      "title_pin": "1b61330cf892e4933f4db3e9b81f821d82ae0268",
+      "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "source": "new_main_qualification",
+      "owner_data_unchanged": true
+    }
   },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
   "framework_head": "b4a4e00fbf37782deb57066fb4c54f8aa587f527",
@@ -658,7 +668,7 @@
       "Kaiser escape/ending, skipped traversal/content and independent audio",
       "Broader consumer follow-up using existing campaign evidence"
     ],
-    "promotion": "Fresh four current-build setups prepared; owner profiles not yet replaced by this record. No merge or release.",
+    "promotion": "One verified current executable per owner title, normal untouched window/audio/input configuration. No merge/release or repeated accepted human handoff.",
     "game": {
       "executable": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\integration-build-x2\\MegaManX2SNESRecomp.exe",
       "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
