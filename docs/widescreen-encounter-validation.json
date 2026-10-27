@@ -231,5 +231,28 @@
     "validation": "X2 door crossing continuous/load: zero WRAM/pixel differences. X3 opening/crossing/closing: 100 matched native comparison frames, zero unexplained pixel differences.",
     "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\feedback3",
     "owner_acceptance": "Pending; existing failures and caveats remain intact."
+  },
+  "priority_burndown": {
+    "engine": "5e88adcb8eae370254c2ed0f6daad82763e02711",
+    "first_priority": "Actual rocket/ascent and boss-arena stale margins",
+    "implementation": [
+      "Allow self-validated uniform terrain while retaining the BG2 object-layer safeguard",
+      "Use512x256 source-map scroll aliases and effective raster/OPT offsets",
+      "Consult the exact source in the mode2 heat-shimmer drawing path",
+      "Reuse X3 OAM-only HUD anchors so X2 BG3 rocket scenery stays intact"
+    ],
+    "validation": [
+      "780-frame actual ascent/control/camera handoff passes hybrid342 and pure684",
+      "Ascent and arena same-width before/after samples have identical128KiB WRAM and64KiB VRAM",
+      "All24 cropped native-view samples match outside relocated HUD; one cross-width arena sample differs only at WRAM scratch10, so full cross-width RAM equality is not claimed",
+      "Current-build save/load: zero RAM/pixel differences in ascent342, arena342 and arena684",
+      "ROM-free selector and actual OPT pixel tests pass;16 inactive-provider mode1/mode2 render digests match HEAD",
+      "X3 accepted factory and Byte routes: full presented pixels and allWRAM match the prior candidate"
+    ],
+    "performance": "Short serial actual software/debug runtime samples: baseline236..249fps, optimized candidate235..256fps, no consistent slowdown. This is headroom evidence, not a statistical release benchmark.",
+    "original_reference": "Unmodified Snes9x arena checkpoint3 is valid. Two early rocket-reference preparation attempts died and are explicitly excluded; no original-game rocket comparison is claimed.",
+    "owner_visual_acceptance": "Pending the next bundled focused validation; previous Byte/doors and factory passes remain accepted.",
+    "next_priority": "Serges incomplete entrance/mecha art and void/background boundary",
+    "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
   }
 }

@@ -267,13 +267,16 @@ static bool x2_ws_boss_hud_present(void) {
 void X2ConfigureWsHud(void) {
   extern bool g_ws_active;
   if (!g_ppu) return;
+  /* X2's bars are sprites. BG3 carries the rocket scenery/masks, so shifting
+   * its top corners as HUD creates black rectangles inside the native view.
+   * Use the same independent OAM anchor already used by X3. */
+  PpuSetWidescreenHudSplit(g_ppu, 0, 0, 0);
   if (!g_ws_active || !x2_ws_hud_present()) {
     PpuSetWsHudOamShiftRange2(g_ppu, 0, 0);
     PpuSetWsHudOamShiftRange(g_ppu, 0, 0);   /* off = authentic placement */
-    PpuSetWidescreenHudSplit(g_ppu, 0, 0, 0);
     return;
   }
-  PpuSetWidescreenHudSplit(g_ppu, kX2HudBandHeight,
+  PpuSetWsHudOamBand(g_ppu, kX2HudBandHeight,
                            kX2HudLeftEnd, kX2HudRightStart);
   PpuSetWsHudOamShiftRange(g_ppu, kX2HudSlotFirst, 16);
   PpuSetWsHudOamShiftRange2(g_ppu, 16, x2_ws_boss_hud_present() ? 7 : 0);
