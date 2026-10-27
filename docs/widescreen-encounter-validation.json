@@ -14,9 +14,10 @@
     ],
     "qualified_mechanics": "Cumulative rematches, original final-stage entry, both Zero-room branches and native Sigma handoff; both Sigma forms and ending. Travel, collection and combat assists remain explicit.",
     "remaining": [
-      "Remaining full content/audio coverage",
-      "Current-main integration and final performance gate"
-    ]
+      "Remaining full content and independent audio coverage",
+      "Focused owner visuals and broader-consumer follow-up; current X2/X3 new-base automation, startup/memory and matched runtime are qualified"
+    ],
+    "new_main_automated_gate": "Passed for current X2/X3: full images/WRAM, scalar/native game PCM+SPC, current save/Capture and matched runtime/startup/memory. Human/content/ending and broader-consumer caveats remain."
   },
   "base_title_head": "c62a096873fd6b98f197bb06b0b6929432de1bc3",
   "framework_head": "b4a4e00fbf37782deb57066fb4c54f8aa587f527",
@@ -636,5 +637,246 @@
       "Representative other-consumer/startup/memory gate"
     ],
     "promotion": "One current canonical owner binary per game remains unchanged on enginea4. No merge or release. Selector closed with four focused segments; optional hub assistance retired."
+  },
+  "new_main_qualification": {
+    "status": "automated X2/X3 gate passed",
+    "compiled_engine": "e772aca74d06cef9435df2f34cda1689329b19c4",
+    "reviewed_engine": "0095609940bc3a304da8c70f2dcab79264bbb8ab",
+    "integration": "a99e2fc0b9ff192d3a7302d02409c64e32f7cf24",
+    "base": "5ac4b98e065b668ed77b65fa6342ec296b8b9e23",
+    "exact_source_tree": "396f26717c1bf151b0e110950c5fd5f179c1823a",
+    "source_equivalence": "Compilede772, rebased PR0095609 and integrationa99e2fc have identical complete tracked trees; git diff--exit-code and tree hashes verified. Rebased push guarded with the reviewed908346c remote head.",
+    "components": "Five production PPU fixtures plus native raster ownership/readback, APU scalar/native and CRC byte/slice contracts pass on the new combined source.",
+    "reuse": "Existing beads-8wg.2.154/current5ac qualification for MMX, SMW, Super Metroid and F-Zero is retained separately. No fresh combined all-consumer run is claimed.",
+    "limits": [
+      "Single shared Windows x64 host; muted software/debug protocol costs, not isolated release frame-time benchmarks",
+      "Matched scalar game audio is not independent original-game soundtrack/SFX coverage",
+      "Earlier actual combat/fortress proofs retain their original binary identities; these comparisons do not relabel them"
+    ],
+    "remaining": [
+      "Four focused human visuals and optional Kaiser finishing hit",
+      "Kaiser escape/ending, skipped traversal/content and independent audio",
+      "Broader consumer follow-up using existing campaign evidence"
+    ],
+    "promotion": "Fresh four current-build setups prepared; owner profiles not yet replaced by this record. No merge or release.",
+    "game": {
+      "executable": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\integration-build-x2\\MegaManX2SNESRecomp.exe",
+      "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+      "title_code": "73936500f792d99cea5eeb1e27d2238797b1c00d",
+      "compiled_title_repository_head": "8aae8328ba7b7255dbb0afdb90bdfe71dbb51ddf",
+      "package": "Standard title renderer with shared native APU time and SLICE8 CRC; HLE desktop frame staging. These games do not receive the MMX/SM custom native raster consumer package.",
+      "actual_defines": {
+        "APU_NATIVE": 1,
+        "CRC32_SLICES": 8,
+        "AUDIO_TRACE_HISTORY": 2
+      },
+      "functional": {
+        "passed": true,
+        "cases": {
+          "rocket": 52,
+          "serges": 24,
+          "ostrich": 20
+        },
+        "samples": 96,
+        "preserved": "Complete presented image and128KiB WRAM at15-frame samples; original controlled input/health only."
+      },
+      "default_functional": {
+        "passed": true,
+        "cases": {
+          "rocket": 52,
+          "serges": 24,
+          "ostrich": 20,
+          "sigma": 8
+        },
+        "samples": 104
+      },
+      "audio": {
+        "pure": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-rocket-audio.json",
+          "sample_frames": 128162,
+          "rate": 32040,
+          "pcm_sha256": "90311a5216801b10f0092b180712adc26ed943de38cc805419d65cd018927c06",
+          "peak": 25811,
+          "spc_before_after_identical": true,
+          "apu_time_implementation": "NATIVE",
+          "actual_guest_sync_cycles": 0
+        },
+        "default": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-default-audio.json",
+          "sample_frames": 128162,
+          "rate": 32040,
+          "pcm_sha256": "63c550015250acc824b1b91b13aca13cb8a97c536343925f860c6614c785a269",
+          "peak": 26215,
+          "spc_before_after_identical": true,
+          "apu_time_implementation": "NATIVE",
+          "actual_guest_sync_cycles": 0
+        }
+      },
+      "current_build_save_load": {
+        "case": "incoming-main-x2-current",
+        "ram_difference": 0,
+        "pixel_difference": 0,
+        "passed": true
+      },
+      "current_build_capture": {
+        "passed": true,
+        "picture": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-capture-check\\review-captures\\incoming-main-x2-serges-20261027-091349-883449.png",
+        "metadata_errors": {},
+        "replay": {
+          "case": "incoming-main-x2-serges-capture",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        },
+        "progress": {
+          "format": "codex-review-progress-v1",
+          "slot": 1,
+          "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2\\saves\\save1.sav",
+          "sha256": "48dcd4884d8464e711732db863434c508dbb3919cb0afb6a7b280380c1fca2ea",
+          "frame": 3091,
+          "tag": {
+            "segment": "incoming-main-x2-serges",
+            "binary_sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+            "engine": "e772aca74d06cef9435df2f34cda1689329b19c4"
+          },
+          "utc": "2026-10-27T16:13:49.883449+00:00"
+        }
+      },
+      "runtime": {
+        "pure": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-runtime.json",
+          "pairs": 6,
+          "package": "New main5ac/e772: native APU time +SLICE8 CRC, standard title renderer; previous95ad scalar APU +byte CRC. Both HLE desktop frame staging, FULL trace, coverageOFF, pure342 software/dummy video/audio with host volume0.",
+          "configuration": "Matched240-frame original AI workloads, pure interpreter, software/dummy video/audio, unthrottled diagnostic builds; serial alternating order; no input/cheat writes during timed intervals",
+          "median_time_change_percent": -1.8209125503425627,
+          "range_percent": [
+            -4.3939387556863,
+            8.297693861972721
+          ],
+          "minimum_candidate_fps": 218.14947255376367,
+          "assessment": "Neutral/inconclusive: mixed changes within shared-host variation; no proven win or reproducible regression. Profiles and games are not pooled."
+        },
+        "default": {
+          "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-default-runtime.json",
+          "pairs": 6,
+          "package": "Candidate e772/main5ac native APU time +SLICE8 CRC with standard title renderer; baseline95ad scalar APU +byte CRC, same title and frame staging. Separate from pure-interpreter samples.",
+          "configuration": "Matched240-frame original AI, default hybrid execution, widescreen342, HLE frame staging, FULL trace, optional coverageOFF, software/dummy output with audio emulation and volume0; serial alternating order; no input/cheat writes in timed interval.",
+          "median_time_change_percent": 1.6052165388819484,
+          "range_percent": [
+            -5.777151061086105,
+            10.499135915574076
+          ],
+          "minimum_candidate_fps": 256.38467272612576,
+          "assessment": "Neutral/inconclusive: mixed changes within shared-host variation; no proven win or reproducible regression. Profiles and games are not pooled."
+        }
+      },
+      "resource_costs": {
+        "raw": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-x2-launch-costs.json",
+        "identities": {
+          "candidate": {
+            "sha256": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+            "executable_bytes": 139756968
+          },
+          "baseline": {
+            "sha256": "fb2eb8f2e8600eab8ef195276c3412f9f28a7e9f6f64efa0cf1eeefed69a80ba",
+            "executable_bytes": 139746123
+          }
+        },
+        "medians": {
+          "baseline": {
+            "startup_seconds": 0.6580174999544397,
+            "rss": 128569344,
+            "private": 3836600320
+          },
+          "candidate": {
+            "startup_seconds": 0.647736300015822,
+            "rss": 127111168,
+            "private": 3836469248
+          }
+        },
+        "assessment": "Warm debug startup/RSS/private costs effectively unchanged. Approximately3.57GiB private commitment is shared by both diagnostic builds; not a release footprint claim.",
+        "scope": "Startup until first debug-ready frame; protocol/polling overhead included. RSS/private are observed costs, not an isolated cold-start or release benchmark."
+      }
+    },
+    "states": {
+      "x2-serges": {
+        "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-owner-states\\x2-serges.sav",
+        "sha256": "f2a897629475f08ea686454d731abd7311d5b76f09d0d79b451513f631a9de69",
+        "binary": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+        "info": {
+          "frame": 3093,
+          "mode": "0204040000000001",
+          "stage": "0a014000000002010100",
+          "player": "0002000218ce0a40",
+          "x": 2766,
+          "y": 361,
+          "hp": 32,
+          "camera": [
+            2638,
+            256
+          ],
+          "bounds": "800a00010001000a800af8ff0000000000014f0a",
+          "event": "0000000000000000000000000000000000000000000000000100010200010000000000040000000000000000000000000000000000000000000100000000000000000000000000000000000000000000"
+        },
+        "current_build_replay": {
+          "case": "incoming-handoff-x2-serges",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      },
+      "x2-ostrich-entry": {
+        "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-owner-states\\x2-ostrich-entry.sav",
+        "sha256": "3d0b733a03c28b895b7abc6ea63eb504fa03f1b750c56c7862ecdbe9a1af0ed1",
+        "binary": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+        "info": {
+          "frame": 4913,
+          "mode": "0204040000001c12",
+          "stage": "07004000000002010100",
+          "player": "00021e04eaca1700",
+          "x": 6090,
+          "y": 975,
+          "hp": 16,
+          "camera": [
+            6048,
+            792
+          ],
+          "bounds": "001e00001803a017001ef8ff000000000000a017",
+          "event": "000000000000000000000000000000000000000000000000000002020000000000000004000000000000000000000000d810000000000000000100000000000000000000000000000000000000000000"
+        },
+        "current_build_replay": {
+          "case": "incoming-handoff-x2-ostrich-entry",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      },
+      "x2-sigma-walls": {
+        "path": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\incoming-main-owner-states\\x2-sigma-walls.sav",
+        "sha256": "0ee63c581b2e1b1c1395419663bc8047828f98d171329cbd676aa043792a34f2",
+        "binary": "58982242f20e1a761fa78aae07eecc0937890788c9e727cfe9ebf147dbd82cb2",
+        "info": {
+          "frame": 30231,
+          "mode": "0204040000000002",
+          "stage": "05044000000002040100",
+          "player": "00020002b0300e00",
+          "x": 3632,
+          "y": 3503,
+          "hp": 16,
+          "camera": [
+            3584,
+            3328
+          ],
+          "bounds": "000e000d000d000e000ef8ff00000000000d000e",
+          "event": "0000000000000000000000000000000000000000000000000f000502000000180d0000040000000000000000000000000000000000000000000100000000000000000000000035010200010080000000"
+        },
+        "current_build_replay": {
+          "case": "incoming-handoff-x2-sigma-walls",
+          "ram_difference": 0,
+          "pixel_difference": 0,
+          "passed": true
+        }
+      }
+    }
   }
 }

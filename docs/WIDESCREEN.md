@@ -328,3 +328,24 @@ samples (median7.3% lower), on this one protocol-headroom workload. No broader
 speed claim follows. X3's separate mixed samples are neutral/inconclusive;
 results are not pooled across games. Other-consumer/startup/memory coverage
 and the individual pending owner visuals remain separate gates.
+
+### Refreshed engine base (2026-10-27)
+
+The engine PR is rebased onto main5ac4b98. Reviewed0095609, compiled combined
+e772aca and integrationa99e2fc have identical tracked source trees. Both title
+pins now select this reviewed engine; generated title code is unchanged.
+
+New X2 build58982242 passes96 interpreter and104 default-execution comparison
+samples, including rocket780, Serges360, Ostrich300 and default Sigma120.
+Complete output and128KiB WRAM match the preserved95ad integration. Sampled
+rocket PCM/SPC state is byte-identical in both execution modes. Current save,
+Pause/Capture and all three refreshed owner setup replays are exact.
+
+Native APU time and SLICE8 CRC are verified in the actual build. Standard
+rendering remains in use; this is not the MMX custom native-raster package.
+Six paired240-frame samples per execution mode are mixed within shared-host
+variation and neutral/inconclusive. Warm startup, RSS and private commitment
+are effectively unchanged; FULL diagnostic footprints are not release costs.
+The other titles' campaign evidence is retained separately. Focused human
+visuals, skipped content/independent audio and broader-consumer follow-up
+remain open. See `new_main_qualification` in the audit JSON for exact identities.
