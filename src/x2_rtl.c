@@ -395,16 +395,19 @@ static int x2_ws_spawn_stream_margin(void) {
   if (stage == 0x0c)
     return 0;
 
-  /* Serges' fortress platform ($29:FA19, enemy $61 at X=$0A40) must be
-   * allocated after the preceding door has advanced the native camera. An
+  /* Serges' platform ($29:FA19, enemy $61 at X=$0A40) and final-stage
+   * Zero ($29:E704, enemy $08 -> $68 at X=$0E78) must be allocated after
+   * the preceding door has advanced the native camera. An
    * early gutter allocation consumes its level record while the encounter
    * is still outside the arena, leaving an empty, locked room. Protect the
    * complete look-ahead interval at every aspect, including the initial
    * vertical sweep. Resident-object visibility and rendering stay wide. */
   unsigned extra = (unsigned)((margin + 31) & ~31);
   unsigned camera = g_ram[0x1e5d] | (unsigned)g_ram[0x1e5e] << 8;
-  if (stage == 0x0a && camera <= 0x0a40 &&
-      camera + 0x100u + extra >= 0x0a40)
+  unsigned door_actor_x = stage == 0x0a ? 0x0a40u :
+      stage == 5 && g_ram[0x1fae] == 4 ? 0x0e78u : 0;
+  if (door_actor_x && camera <= door_actor_x &&
+      camera + 0x100u + extra >= door_actor_x)
     return 0;
   return margin;
 }

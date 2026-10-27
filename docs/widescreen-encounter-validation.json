@@ -12,9 +12,8 @@
       "Ostrich entrance bars",
       "New Sigma arena wall extension"
     ],
-    "qualified_mechanics": "Cumulative rematches, normal final-stage entry, checkpoint-assisted both Sigma forms and ending; bypasses retained in fortress_final_progress.",
+    "qualified_mechanics": "Cumulative rematches, original final-stage entry, both Zero-room branches and native Sigma handoff; both Sigma forms and ending. Travel, collection and combat assists remain explicit.",
     "remaining": [
-      "Zero/Black Zero approach/branches",
       "Remaining full content/audio coverage",
       "Current-main integration and final performance gate"
     ]
@@ -431,14 +430,13 @@
     "bypasses": [
       "Earlier Maverick weapon eligibility supplied before the rematch audit",
       "Original full checkpoint loader selects rematches while preserving results; hub entry travel bypassed",
-      "Checkpoint4 skips final-stage approach and Zero/Black Zero branch; these are unverified",
+      "Checkpoint4 skips final-stage approach and Zero/Black Zero branch; these are unverified (historical checkpoint-only gap; now covered separately by zero_approach_followup) (historical checkpoint-only gap; now covered separately by zero_approach_followup)",
       "Player position/health and boss HP1 assist; real projectile/charged damage, AI, camera, defeat and final-clear logic retained"
     ],
     "excluded": [
       "Checkpoint5 is the earlier X-Hunter briefing, not Zero/final approach; unrelated setup is excluded"
     ],
     "remaining": [
-      "Zero/Black Zero approaches and branch coverage",
       "Other remaining fortress branches and X3 final/Sigma/ending",
       "Full stage/sublevel/exit inventory, independent audio and current-main combined integration",
       "Focused owner confirmation of Serges entering front and Ostrich entrance bars"
@@ -472,5 +470,94 @@
     },
     "owner_visual_acceptance": "Pending only these new final-arena visuals; prior accepted checks remain accepted.",
     "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown"
+  },
+  "zero_approach_followup": {
+    "problem": "At684px both hybrid and pure interpreter consume the final-stage approach prematurely: camera never locks and the Zero room is empty. The identical342px approach starts the original encounter.",
+    "record": "29:E704, dynamic enemy08 becomes68 in stage5/variant4, worldX0E78",
+    "change": "Reuse the existing native-frontier guard over the complete aspect-dependent approach interval; resident actor visibility stays widened. No actor, camera, control, collection or result flags are changed by the fix.",
+    "engine": "2cb5d796d11ff5273db89266af0d7734d36f8b18 (isolated current-main integration; canonical owner review runtime remains on a4e3066)",
+    "generation": "Supported project recipe regenerated using the combined engine, including title override hooks",
+    "checks": {
+      "zero-hybrid684-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\zero-hybrid684-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "zero-pure684-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\zero-pure684-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "zero-hybrid342-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\zero-hybrid342-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "blackzero-hybrid342-entry-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\rocket\\blackzero-hybrid342-entry-fixed.json",
+        "camera": [
+          3584,
+          272
+        ],
+        "control": 58,
+        "actor_ids": [
+          104
+        ]
+      },
+      "x2-zero-pure684-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-zero-pure684-fixed.json",
+        "sigma_camera": [
+          3584,
+          3328
+        ],
+        "sigma_present": true
+      },
+      "x2-blackzero-pure684-fixed": {
+        "passed": true,
+        "evidence": "G:\\Temp\\Codex\\mmx23-trigger-audit-20261026\\burndown\\x2-blackzero-pure684-fixed.json",
+        "sigma_camera": [
+          3584,
+          3328
+        ],
+        "sigma_present": true
+      }
+    },
+    "branches": [
+      "Uncollected parts: original dialogue/live32HP Zero, explicit HP1 assist, real charged defeat, recovery dialogue, player control, floor opening and native fall to Sigma intro",
+      "Rescued Zero: supply three earlier collection prerequisites before allocation; actual Black Zero/rescue dialogue completes, control returns, original floor/fall reaches Sigma intro"
+    ],
+    "bypasses": [
+      "Earlier final-stage progression/collection prerequisites and ordinary stage travel are bypassed",
+      "Pre-door approach fixture is build-specific; full current-build Sigma-handoff save/load replay passes",
+      "No claim of natural acquisition of all Zero parts or unassisted combat"
+    ],
+    "remaining": [
+      "Serges front/Ostrich bars/Sigma arena visual confirmation",
+      "X3 Kaiser finishing hit and escape/ending",
+      "Remaining fortress/content/audio coverage and final integration/runtime qualification"
+    ]
   }
 }
