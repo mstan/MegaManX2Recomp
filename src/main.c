@@ -39,4 +39,6 @@
 #define MmxConfigureWsBgMargins X2ConfigureWsBgMargins
 #define kMmxGameInfo kX2GameInfo
 
+#include "mmx_diagnostics_host.h"
+#define snesrecomp_desktop_main MmxDiagnosticDesktopMain
 #include "desktop/mmx23_host_main.inc"

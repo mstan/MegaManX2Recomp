@@ -12,6 +12,7 @@
  * finding and must not be assumed for this title.
  */
 #include "x2_rtl.h"
+#include "mmx_replay.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -828,6 +829,7 @@ void X2StateLoadExtra(SaveLoadInfo *sli, uint32_t version) {
 }
 
 void X2OnStateLoaded(uint32_t version) {
+  MmxReplayStateLoaded();
   (void)version;
   /* Renderer history belongs to the abandoned timeline, not this snapshot. */
   WsShadowReset();

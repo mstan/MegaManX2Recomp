@@ -1,11 +1,14 @@
 #include "common_cpu_infra.h"
+#include "mmx_replay.h"
 #include "x2_rtl.h"
 
 /* .title drives coverage-artifact naming (tier2_<title>_*.json) — keep it
  * unique per ROM so sibling Mega Man X ports never collide. */
 const RtlGameInfo kX2GameInfo = {
   .title = "x2",
-  .initialize = NULL,
+  .initialize = &MmxReplayRomLoaded,
+  .frame_begin = &MmxReplayBegin,
+  .frame_end = &MmxReplayEnd,
   .run_frame = &RunOneFrameOfGame,
   .draw_ppu_frame = &X2DrawPpuFrame,
   .save_name_prefix = "save",

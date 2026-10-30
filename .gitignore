@@ -37,3 +37,8 @@ tools/__pycache__/
 /config.local.ini
 /keybinds.ini
 /tier2_*.json
+
+# Player diagnostics
+/logs/
+/last_run_report.json
+/replay-divergence.sav
